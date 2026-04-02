@@ -1,0 +1,38 @@
+{
+  "name": "aas-tools-platform",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@aas-core-works/aas-core3.1-typescript": "^1.0.0",
+    "@handsontable/react": "^16.2.0",
+    "@reactflow/controls": "^11.2.14",
+    "@reactflow/minimap": "^11.7.14",
+    "@supabase/supabase-js": "^2.49.0",
+    "handsontable": "^17.0.1",
+    "jszip": "^3.10.1",
+    "lucide-react": "^0.383.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0",
+    "reactflow": "^11.11.4",
+    "xlsx": "^0.18.5",
+    "zundo": "^2.3.0",
+    "zustand": "^5.0.12"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.3",
+    "vite": "^6.0.0"
+  }
+}
