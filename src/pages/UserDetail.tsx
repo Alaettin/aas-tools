@@ -1,7 +1,11 @@
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Loader2, Save, CheckCircle, Shield, User } from 'lucide-react';
+import { ArrowLeft, Loader2, Save, CheckCircle, Shield, User, BookOpen } from 'lucide-react';
 import { useUserDetail } from '@/hooks/useUserDetail';
+import { useLocale } from '@/context/LocaleContext';
 import { tools } from '@/tools/registry';
+import { supabase } from '@/lib/supabase';
+import type { Manual } from '@/docs/types';
 import type { UserRole } from '@/types';
 
 export function UserDetailPage() {
@@ -18,10 +22,25 @@ export function UserDetailPage() {
 
 function UserDetailContent({ userId }: { userId: string }) {
   const navigate = useNavigate();
+  const { t, locale } = useLocale();
   const {
-    profile, role, setRole, toolAccess, toggleTool,
+    profile, role, setRole, toolAccess, toggleTool, docAccess, toggleDoc,
     loading, saving, saved, error, save,
   } = useUserDetail(userId);
+
+  const [manuals, setManuals] = useState<Manual[]>([]);
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data } = await supabase
+        .from('doc_manuals')
+        .select('*')
+        .order('sort_order', { ascending: true });
+      if (!mounted) return;
+      if (data) setManuals(data as Manual[]);
+    })();
+    return () => { mounted = false; };
+  }, []);
 
   if (loading) {
     return (
@@ -34,13 +53,13 @@ function UserDetailContent({ userId }: { userId: string }) {
   if (!profile) {
     return (
       <div className="max-w-2xl animate-fade-in">
-        <p className="text-sm text-red-400">Benutzer nicht gefunden.</p>
+        <p className="text-sm text-red-400">{t('userDetail.notFound')}</p>
       </div>
     );
   }
 
   const isAdmin = role === 'admin';
-  const memberSince = new Date(profile.created_at).toLocaleDateString('de-DE', {
+  const memberSince = new Date(profile.created_at).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-US', {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
@@ -61,7 +80,7 @@ function UserDetailContent({ userId }: { userId: string }) {
         className="flex items-center gap-2 text-xs text-txt-muted hover:text-accent transition-colors mb-6 font-mono"
       >
         <ArrowLeft className="w-3 h-3" />
-        Benutzer
+        {t('nav.users')}
       </button>
 
       {/* User Header */}
@@ -74,7 +93,7 @@ function UserDetailContent({ userId }: { userId: string }) {
             {profile.display_name || profile.email}
           </h1>
           <p className="text-sm text-txt-muted">
-            {profile.email} — Mitglied seit {memberSince}
+            {profile.email} — {t('userDetail.memberSince', { date: memberSince })}
           </p>
         </div>
       </div>
@@ -91,7 +110,7 @@ function UserDetailContent({ userId }: { userId: string }) {
           <div className="flex items-center gap-2">
             <Shield className="w-4 h-4 text-accent" />
             <h2 className="font-mono text-sm font-semibold uppercase tracking-wider text-txt-secondary">
-              Rolle
+              {t('userDetail.role')}
             </h2>
           </div>
         </div>
@@ -101,11 +120,11 @@ function UserDetailContent({ userId }: { userId: string }) {
             onChange={e => setRole(e.target.value as UserRole)}
             className="bg-bg-input border border-border rounded-sm px-3 py-2.5 text-sm text-txt-primary focus:border-accent focus:ring-1 focus:ring-accent/30"
           >
-            <option value="admin">Admin</option>
-            <option value="user">User</option>
+            <option value="admin">{t('userDetail.roleAdmin')}</option>
+            <option value="user">{t('userDetail.roleUser')}</option>
           </select>
           <p className="text-2xs text-txt-muted mt-2">
-            Admins haben Zugriff auf alle Tools und die Benutzerverwaltung.
+            {t('userDetail.roleDescription')}
           </p>
         </div>
       </div>
@@ -116,13 +135,13 @@ function UserDetailContent({ userId }: { userId: string }) {
           <div className="flex items-center gap-2">
             <User className="w-4 h-4 text-accent" />
             <h2 className="font-mono text-sm font-semibold uppercase tracking-wider text-txt-secondary">
-              Tool-Zugriff
+              {t('userDetail.toolAccess')}
             </h2>
           </div>
         </div>
         <div className="p-5 space-y-3">
           {tools.length === 0 ? (
-            <p className="text-sm text-txt-muted">Keine Tools verfügbar.</p>
+            <p className="text-sm text-txt-muted">{t('userDetail.noTools')}</p>
           ) : (
             tools.map(tool => (
               <label
@@ -145,7 +164,50 @@ function UserDetailContent({ userId }: { userId: string }) {
           )}
           {isAdmin && (
             <p className="text-2xs text-txt-muted mt-2">
-              Admins haben automatisch Zugriff auf alle Tools.
+              {t('userDetail.adminToolHint')}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Doc Access */}
+      <div className="bg-bg-surface border border-border rounded mb-6">
+        <div className="px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <BookOpen className="w-4 h-4 text-accent" />
+            <h2 className="font-mono text-sm font-semibold uppercase tracking-wider text-txt-secondary">
+              {t('userDetail.docAccess')}
+            </h2>
+          </div>
+        </div>
+        <div className="p-5 space-y-3">
+          {manuals.length === 0 ? (
+            <p className="text-sm text-txt-muted">{t('userDetail.noDocs')}</p>
+          ) : (
+            manuals.map(manual => (
+              <label
+                key={manual.id}
+                className="flex items-center gap-3 cursor-pointer"
+              >
+                <input
+                  type="checkbox"
+                  checked={isAdmin || docAccess.has(manual.id)}
+                  disabled={isAdmin}
+                  onChange={() => toggleDoc(manual.id)}
+                  className="accent-accent w-4 h-4"
+                />
+                <div>
+                  <span className="text-sm text-txt-primary">{manual.title}</span>
+                  {manual.description && (
+                    <span className="text-xs text-txt-muted ml-2">{manual.description}</span>
+                  )}
+                </div>
+              </label>
+            ))
+          )}
+          {isAdmin && (
+            <p className="text-2xs text-txt-muted mt-2">
+              {t('userDetail.adminDocHint')}
             </p>
           )}
         </div>
@@ -164,7 +226,7 @@ function UserDetailContent({ userId }: { userId: string }) {
         ) : (
           <Save className="w-4 h-4" />
         )}
-        {saved ? 'Gespeichert' : 'Speichern'}
+        {saved ? t('userDetail.saved') : t('userDetail.save')}
       </button>
     </div>
   );

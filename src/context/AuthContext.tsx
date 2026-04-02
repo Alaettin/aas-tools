@@ -17,6 +17,7 @@ interface AuthState {
   isLoading: boolean;
   isAdmin: boolean;
   toolAccess: string[];
+  docAccess: string[];
 }
 
 interface AuthContextType extends AuthState {
@@ -48,13 +49,21 @@ async function loadToolAccess(userId: string): Promise<string[]> {
   return (data || []).map(r => r.tool_id);
 }
 
-function saveCache(profile: Profile | null, toolAccess: string[]) {
+async function loadDocAccess(userId: string): Promise<string[]> {
+  const { data } = await supabase
+    .from('user_doc_access')
+    .select('manual_id')
+    .eq('user_id', userId);
+  return (data || []).map(r => r.manual_id);
+}
+
+function saveCache(profile: Profile | null, toolAccess: string[], docAccess: string[]) {
   if (profile) {
-    localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify({ profile, toolAccess }));
+    localStorage.setItem(AUTH_CACHE_KEY, JSON.stringify({ profile, toolAccess, docAccess }));
   }
 }
 
-function loadCache(): { profile: Profile; toolAccess: string[] } | null {
+function loadCache(): { profile: Profile; toolAccess: string[]; docAccess: string[] } | null {
   try {
     const raw = localStorage.getItem(AUTH_CACHE_KEY);
     if (!raw) return null;
@@ -81,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading: false, // No spinner — show cached data
         isAdmin: cached.profile.role === 'admin',
         toolAccess: cached.toolAccess,
+        docAccess: cached.docAccess || [],
       };
     }
     return {
@@ -90,6 +100,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       isLoading: true,
       isAdmin: false,
       toolAccess: [],
+      docAccess: [],
     };
   });
   const initializedRef = useRef(false);
@@ -102,12 +113,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (!mounted) return;
       if (session?.user) {
         // If we have cache, skip loading state — just update in background
-        const [profile, toolAccess] = await Promise.all([
+        const [profile, toolAccess, docAccess] = await Promise.all([
           loadProfile(session.user.id),
           loadToolAccess(session.user.id),
+          loadDocAccess(session.user.id),
         ]);
         if (!mounted) return;
-        if (profile) saveCache(profile, toolAccess);
+        if (profile) saveCache(profile, toolAccess, docAccess);
         setState({
           session,
           user: session.user,
@@ -115,6 +127,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           isLoading: false,
           isAdmin: profile?.role === 'admin',
           toolAccess,
+          docAccess,
         });
       } else {
         clearCache();
@@ -134,12 +147,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (!mounted) return;
 
         if (event === 'SIGNED_IN' && session?.user && initializedRef.current) {
-          const [profile, toolAccess] = await Promise.all([
+          const [profile, toolAccess, docAccess] = await Promise.all([
             loadProfile(session.user.id),
             loadToolAccess(session.user.id),
+            loadDocAccess(session.user.id),
           ]);
           if (!mounted) return;
-          if (profile) saveCache(profile, toolAccess);
+          if (profile) saveCache(profile, toolAccess, docAccess);
           setState({
             session,
             user: session.user,
@@ -147,6 +161,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isLoading: false,
             isAdmin: profile?.role === 'admin',
             toolAccess,
+            docAccess,
           });
         } else if (event === 'SIGNED_OUT') {
           clearCache();
@@ -157,6 +172,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             isLoading: false,
             isAdmin: false,
             toolAccess: [],
+            docAccess: [],
           });
         } else if (session?.user) {
           // TOKEN_REFRESHED, INITIAL_SESSION, etc — just update session
@@ -177,9 +193,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const refreshProfile = async () => {
     if (!state.user) return;
-    const [profile, toolAccess] = await Promise.all([
+    const [profile, toolAccess, docAccess] = await Promise.all([
       loadProfile(state.user.id),
       loadToolAccess(state.user.id),
+      loadDocAccess(state.user.id),
     ]);
     if (profile) {
       setState(prev => ({
@@ -187,6 +204,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile,
         isAdmin: profile.role === 'admin',
         toolAccess,
+        docAccess,
       }));
     }
   };
@@ -197,16 +215,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         const msg = error.message || '';
         if (error.status === 400 || msg.includes('Invalid login credentials')) {
-          return { error: 'E-Mail oder Passwort falsch.' };
+          return { error: 'auth.errorInvalidCredentials' };
         }
         if (msg.includes('Email not confirmed')) {
-          return { error: 'Bitte bestätige deine E-Mail-Adresse.' };
+          return { error: 'auth.errorConfirmEmail' };
         }
-        return { error: 'Anmeldung fehlgeschlagen.' };
+        return { error: 'auth.errorSignInFailed' };
       }
       return { error: null };
     } catch {
-      return { error: 'Anmeldung fehlgeschlagen.' };
+      return { error: 'auth.errorSignInFailed' };
     }
   };
 
@@ -220,13 +238,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       if (error) {
         const msg = error.message || '';
         if (error.status === 422 || msg.includes('User already registered')) {
-          return { error: 'Diese E-Mail ist bereits registriert.' };
+          return { error: 'auth.errorAlreadyRegistered' };
         }
-        return { error: 'Registrierung fehlgeschlagen.' };
+        return { error: 'auth.errorSignUpFailed' };
       }
       return { error: null };
     } catch {
-      return { error: 'Registrierung fehlgeschlagen.' };
+      return { error: 'auth.errorSignUpFailed' };
     }
   };
 

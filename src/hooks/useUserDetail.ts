@@ -6,6 +6,7 @@ export function useUserDetail(userId: string) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [role, setRole] = useState<UserRole>('user');
   const [toolAccess, setToolAccess] = useState<Set<string>>(new Set());
+  const [docAccess, setDocAccess] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -23,9 +24,10 @@ export function useUserDetail(userId: string) {
       setLoading(true);
       setError(null);
 
-      const [profileRes, accessRes] = await Promise.all([
+      const [profileRes, accessRes, docAccessRes] = await Promise.all([
         supabase.from('profiles').select('*').eq('id', userId).single(),
         supabase.from('user_tool_access').select('tool_id').eq('user_id', userId),
+        supabase.from('user_doc_access').select('manual_id').eq('user_id', userId),
       ]);
 
       if (cancelled) return;
@@ -40,6 +42,7 @@ export function useUserDetail(userId: string) {
       setProfile(p);
       setRole(p.role);
       setToolAccess(new Set((accessRes.data || []).map(r => r.tool_id)));
+      setDocAccess(new Set((docAccessRes.data || []).map(r => r.manual_id)));
       setLoading(false);
     })();
 
@@ -51,6 +54,16 @@ export function useUserDetail(userId: string) {
       const next = new Set(prev);
       if (next.has(toolId)) next.delete(toolId);
       else next.add(toolId);
+      return next;
+    });
+    setSaved(false);
+  };
+
+  const toggleDoc = (manualId: string) => {
+    setDocAccess(prev => {
+      const next = new Set(prev);
+      if (next.has(manualId)) next.delete(manualId);
+      else next.add(manualId);
       return next;
     });
     setSaved(false);
@@ -107,6 +120,36 @@ export function useUserDetail(userId: string) {
       }
     }
 
+    // Save doc access (same pattern as tool access)
+    const { data: docBackup } = await supabase
+      .from('user_doc_access')
+      .select('manual_id')
+      .eq('user_id', userId);
+
+    await supabase.from('user_doc_access').delete().eq('user_id', userId);
+
+    if (docAccess.size > 0) {
+      const docRows = Array.from(docAccess).map(manualId => ({
+        user_id: userId,
+        manual_id: manualId,
+      }));
+
+      const { error: docInsErr } = await supabase
+        .from('user_doc_access')
+        .insert(docRows);
+
+      if (docInsErr) {
+        if (docBackup && docBackup.length > 0) {
+          await supabase.from('user_doc_access').insert(
+            docBackup.map(b => ({ user_id: userId, manual_id: b.manual_id }))
+          );
+        }
+        setError('Doc-Zugriff konnte nicht gespeichert werden.');
+        setSaving(false);
+        return false;
+      }
+    }
+
     setSaving(false);
     setSaved(true);
     clearTimeout(savedTimerRef.current);
@@ -120,6 +163,8 @@ export function useUserDetail(userId: string) {
     setRole: (r: UserRole) => { setRole(r); setSaved(false); },
     toolAccess,
     toggleTool,
+    docAccess,
+    toggleDoc,
     loading,
     saving,
     saved,

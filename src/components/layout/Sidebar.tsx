@@ -1,18 +1,36 @@
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { getActiveTools } from '@/tools/registry';
+import { supabase } from '@/lib/supabase';
+import type { Manual } from '@/docs/types';
 import {
   Hexagon,
   LayoutDashboard,
   Users,
   Database,
   FileSpreadsheet,
+  BookOpen,
+  FileText,
+  Code,
+  Wrench,
+  GraduationCap,
+  BookMarked,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, (cls: string) => React.ReactNode> = {
   Database: (cls) => <Database className={cls} />,
   Hexagon: (cls) => <Hexagon className={cls} strokeWidth={1.5} />,
   FileSpreadsheet: (cls) => <FileSpreadsheet className={cls} />,
+};
+
+const DOC_ICON_MAP: Record<string, (cls: string) => React.ReactNode> = {
+  BookOpen: (cls) => <BookOpen className={cls} />,
+  FileText: (cls) => <FileText className={cls} />,
+  Code: (cls) => <Code className={cls} />,
+  Wrench: (cls) => <Wrench className={cls} />,
+  GraduationCap: (cls) => <GraduationCap className={cls} />,
 };
 
 interface NavItem {
@@ -55,28 +73,47 @@ function NavLinkItem({ item }: { item: NavItem }) {
 
 // const mainItems: NavItem[] = [];
 
-const systemItems: NavItem[] = [
-  {
-    label: 'Benutzer',
-    path: '/users',
-    icon: <Users className="w-[18px] h-[18px]" />,
-    adminOnly: true,
-  },
-  // {
-  //   label: 'Einstellungen',
-  //   path: '/settings',
-  //   icon: <Settings className="w-[18px] h-[18px]" />,
-  // },
-];
+// systemItems built inside component to access t()
 
 export function Sidebar() {
-  const { isAdmin, toolAccess } = useAuth();
+  const { isAdmin, toolAccess, docAccess } = useAuth();
+  const { t } = useLocale();
+  const [manuals, setManuals] = useState<Manual[]>([]);
+
   const activeTools = getActiveTools()
     .filter(tool => isAdmin || toolAccess.includes(tool.id))
     .sort((a, b) => a.name.localeCompare(b.name));
 
+  // Load accessible manuals for DOCS section
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      const { data } = await supabase
+        .from('doc_manuals')
+        .select('*')
+        .order('sort_order', { ascending: true });
+      if (!mounted) return;
+      if (data) {
+        const accessible = isAdmin
+          ? data
+          : data.filter((m: Manual) => docAccess.includes(m.id));
+        setManuals(accessible as Manual[]);
+      }
+    })();
+    return () => { mounted = false; };
+  }, [isAdmin, docAccess]);
+
+  const systemItems: NavItem[] = [
+    {
+      label: t('nav.users'),
+      path: '/users',
+      icon: <Users className="w-[18px] h-[18px]" />,
+      adminOnly: true,
+    },
+  ];
+
   const visibleSystemItems = systemItems.filter(
-    item => !item.adminOnly || isAdmin
+    (item: NavItem) => !item.adminOnly || isAdmin
   );
 
   return (
@@ -102,14 +139,14 @@ export function Sidebar() {
       {/* Navigation */}
       <nav className="flex-1 px-3 py-4 overflow-y-auto">
         <div className="space-y-1 mb-4">
-          <NavLinkItem item={{ label: 'Dashboard', path: '/', icon: <LayoutDashboard className="w-[18px] h-[18px]" /> }} />
+          <NavLinkItem item={{ label: t('nav.dashboard'), path: '/', icon: <LayoutDashboard className="w-[18px] h-[18px]" /> }} />
         </div>
 
         {/* Active Tools */}
         {activeTools.length > 0 && (
           <>
             <p className="px-3 mt-6 mb-3 text-2xs font-medium text-txt-muted uppercase tracking-widest">
-              Tools
+              {t('nav.tools')}
             </p>
             <div className="space-y-1">
               {activeTools.map(tool => {
@@ -131,14 +168,50 @@ export function Sidebar() {
           </>
         )}
 
+        {/* Docs */}
+        {manuals.length > 0 && (
+          <>
+            <p className="px-3 mt-6 mb-3 text-2xs font-medium text-txt-muted uppercase tracking-widest">
+              {t('nav.docs')}
+            </p>
+            <div className="space-y-1">
+              {manuals.map(manual => {
+                const renderIcon = DOC_ICON_MAP[manual.icon];
+                return (
+                  <NavLinkItem
+                    key={manual.id}
+                    item={{
+                      label: manual.title,
+                      path: `/docs/${manual.slug}`,
+                      icon: renderIcon
+                        ? renderIcon(`w-[18px] h-[18px] ${manual.icon_color}`)
+                        : <BookOpen className={`w-[18px] h-[18px] ${manual.icon_color}`} />,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </>
+        )}
+
         {/* System */}
         <p className="px-3 mt-6 mb-3 text-2xs font-medium text-txt-muted uppercase tracking-widest">
-          System
+          {t('nav.system')}
         </p>
         <div className="space-y-1">
           {visibleSystemItems.map(item => (
             <NavLinkItem key={item.path} item={item} />
           ))}
+          {isAdmin && (
+            <NavLinkItem
+              item={{
+                label: t('nav.manageDocs'),
+                path: '/docs/admin',
+                icon: <BookMarked className="w-[18px] h-[18px]" />,
+                adminOnly: true,
+              }}
+            />
+          )}
         </div>
       </nav>
 

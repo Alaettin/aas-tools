@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Database, Hexagon, FileSpreadsheet, Clock, Loader2 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import { supabase } from '@/lib/supabase';
 
 interface Stats {
@@ -16,27 +17,37 @@ interface ActivityItem {
   updatedAt: string;
 }
 
-function formatDate(date: Date): string {
-  return date.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-}
-
-function timeAgo(dateStr: string): string {
-  const diff = Date.now() - new Date(dateStr).getTime();
-  const mins = Math.floor(diff / 60000);
-  if (mins < 1) return 'gerade eben';
-  if (mins < 60) return `vor ${mins} Min.`;
-  const hours = Math.floor(mins / 60);
-  if (hours < 24) return `vor ${hours} Std.`;
-  const days = Math.floor(hours / 24);
-  if (days < 7) return `vor ${days} Tag${days > 1 ? 'en' : ''}`;
-  return new Date(dateStr).toLocaleDateString('de-DE');
-}
-
 export function DashboardPage() {
   const { profile } = useAuth();
+  const { t, locale } = useLocale();
   const [stats, setStats] = useState<Stats | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const formatDate = (date: Date): string => {
+    return date.toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-US', {
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    });
+  };
+
+  const timeAgo = (dateStr: string): string => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 1) return t('dashboard.timeJustNow');
+    if (mins < 60) return t('dashboard.timeMinutes', { n: mins });
+    const hours = Math.floor(mins / 60);
+    if (hours < 24) return t('dashboard.timeHours', { n: hours });
+    const days = Math.floor(hours / 24);
+    if (days < 7) return t('dashboard.timeDays', { n: days });
+    return new Date(dateStr).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-US');
+  };
+
+  const greeting = (): string => {
+    const hour = new Date().getHours();
+    if (hour < 12) return t('dashboard.greeting.morning');
+    if (hour < 18) return t('dashboard.greeting.afternoon');
+    return t('dashboard.greeting.evening');
+  };
 
   useEffect(() => {
     if (!profile) return;
@@ -46,14 +57,12 @@ export function DashboardPage() {
       try {
         const userId = profile.id;
 
-        // Fetch stats in parallel
         const [dtiRes, aasRes, excelRes] = await Promise.all([
           supabase.from('dti_connectors').select('connector_id', { count: 'exact', head: true }).eq('user_id', userId),
           supabase.from('aas_projects').select('id', { count: 'exact', head: true }).eq('user_id', userId),
           supabase.from('excel_connectors').select('connector_id', { count: 'exact', head: true }).eq('user_id', userId),
         ]);
 
-        // DTI asset count
         let dtiAssets = 0;
         if ((dtiRes.count || 0) > 0) {
           const { data: connectors } = await supabase.from('dti_connectors').select('connector_id').eq('user_id', userId);
@@ -72,7 +81,6 @@ export function DashboardPage() {
           excelConnectors: excelRes.count || 0,
         });
 
-        // Fetch activity feed (recent items from all tools)
         const [dtiItems, aasItems, excelItems] = await Promise.all([
           supabase.from('dti_connectors').select('name, updated_at').eq('user_id', userId).order('updated_at', { ascending: false }).limit(5),
           supabase.from('aas_projects').select('name, updated_at').eq('user_id', userId).order('updated_at', { ascending: false }).limit(5),
@@ -95,13 +103,6 @@ export function DashboardPage() {
 
     return () => { mounted = false; };
   }, [profile]);
-
-  const greeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Guten Morgen';
-    if (hour < 18) return 'Guten Tag';
-    return 'Guten Abend';
-  };
 
   const typeLabel: Record<string, string> = {
     dti: 'DTI Connector',
@@ -151,7 +152,7 @@ export function DashboardPage() {
               <p className="text-xs font-medium text-txt-muted uppercase tracking-wider">AAS Editor</p>
             </div>
             <p className="text-2xl font-mono font-bold">{stats.aasProjects}</p>
-            <p className="text-xs text-txt-muted mt-1">{stats.aasProjects === 1 ? 'Projekt' : 'Projekte'}</p>
+            <p className="text-xs text-txt-muted mt-1">{stats.aasProjects === 1 ? 'Project' : 'Projects'}</p>
           </div>
 
           <div className="bg-bg-surface border border-border rounded p-5">
@@ -169,27 +170,29 @@ export function DashboardPage() {
 
       {/* Activity Feed */}
       <div>
-          <h2 className="font-mono text-sm font-semibold uppercase tracking-wider text-txt-muted mb-3">Aktivität</h2>
-          <div className="bg-bg-surface border border-border rounded overflow-hidden">
-            {activity.length === 0 ? (
-              <div className="p-5 text-center">
-                <Clock className="w-5 h-5 text-txt-muted mx-auto mb-2" />
-                <p className="text-xs text-txt-muted">Noch keine Aktivitäten.</p>
-              </div>
-            ) : (
-              activity.map((item, i) => (
-                <div key={`${item.type}-${item.name}-${i}`}
-                  className="flex items-start gap-3 px-4 py-3 border-b border-border last:border-0">
-                  <div className="mt-0.5">{typeIcon[item.type]}</div>
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm text-txt-primary truncate">{item.name}</p>
-                    <p className="text-2xs text-txt-muted">{typeLabel[item.type]} · {timeAgo(item.updatedAt)}</p>
-                  </div>
+        <h2 className="font-mono text-sm font-semibold uppercase tracking-wider text-txt-muted mb-3">
+          {t('dashboard.activity')}
+        </h2>
+        <div className="bg-bg-surface border border-border rounded overflow-hidden">
+          {activity.length === 0 ? (
+            <div className="p-5 text-center">
+              <Clock className="w-5 h-5 text-txt-muted mx-auto mb-2" />
+              <p className="text-xs text-txt-muted">{t('dashboard.noActivity')}</p>
+            </div>
+          ) : (
+            activity.map((item, i) => (
+              <div key={`${item.type}-${item.name}-${i}`}
+                className="flex items-start gap-3 px-4 py-3 border-b border-border last:border-0">
+                <div className="mt-0.5">{typeIcon[item.type]}</div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm text-txt-primary truncate">{item.name}</p>
+                  <p className="text-2xs text-txt-muted">{typeLabel[item.type]} · {timeAgo(item.updatedAt)}</p>
                 </div>
-              ))
-            )}
-          </div>
+              </div>
+            ))
+          )}
         </div>
+      </div>
     </div>
   );
 }

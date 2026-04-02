@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useUsers } from '@/hooks/useUsers';
 import { useAuth } from '@/context/AuthContext';
+import { useLocale } from '@/context/LocaleContext';
 import {
   Shield,
   User,
@@ -31,7 +32,7 @@ function RoleBadge({ role }: { role: UserRole }) {
   );
 }
 
-function UserRow({ user, currentUserId }: { user: Profile; currentUserId: string }) {
+function UserRow({ user, currentUserId, youLabel, locale }: { user: Profile; currentUserId: string; youLabel: string; locale: string }) {
   const navigate = useNavigate();
   const isCurrentUser = user.id === currentUserId;
 
@@ -42,7 +43,7 @@ function UserRow({ user, currentUserId }: { user: Profile; currentUserId: string
     .toUpperCase()
     .slice(0, 2);
 
-  const createdDate = new Date(user.created_at).toLocaleDateString('de-DE', {
+  const createdDate = new Date(user.created_at).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-US', {
     day: '2-digit',
     month: '2-digit',
     year: 'numeric',
@@ -64,7 +65,7 @@ function UserRow({ user, currentUserId }: { user: Profile; currentUserId: string
             <p className="text-sm font-medium text-txt-primary truncate">
               {user.display_name || '—'}
               {isCurrentUser && (
-                <span className="text-2xs text-txt-muted font-mono ml-2">DU</span>
+                <span className="text-2xs text-txt-muted font-mono ml-2">{youLabel}</span>
               )}
             </p>
             <p className="text-2xs text-txt-muted truncate">{user.email}</p>
@@ -86,6 +87,7 @@ function UserRow({ user, currentUserId }: { user: Profile; currentUserId: string
 
 export function UserManagementPage() {
   const { profile } = useAuth();
+  const { t, locale } = useLocale();
   const { users, loading, error, fetchUsers } = useUsers();
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
@@ -102,9 +104,9 @@ export function UserManagementPage() {
   return (
     <div className="max-w-5xl animate-fade-in">
       <div className="mb-6">
-        <h1 className="font-mono text-2xl font-bold">Benutzerverwaltung</h1>
+        <h1 className="font-mono text-2xl font-bold">{t('users.title')}</h1>
         <p className="text-sm text-txt-secondary mt-1">
-          Verwalte Benutzer und ihre Rollen auf der Plattform.
+          {t('users.subtitle')}
         </p>
       </div>
 
@@ -115,7 +117,7 @@ export function UserManagementPage() {
             type="text"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            placeholder="Suche nach Name oder E-Mail..."
+            placeholder={t('users.searchPlaceholder')}
             className="w-full bg-bg-input border border-border rounded-sm pl-9 pr-3 py-2 text-sm text-txt-primary placeholder:text-txt-muted focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors"
           />
         </div>
@@ -126,9 +128,9 @@ export function UserManagementPage() {
             onChange={e => setRoleFilter(e.target.value as 'all' | UserRole)}
             className="appearance-none bg-bg-input border border-border rounded-sm px-3 py-2 pr-8 text-sm text-txt-primary focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors cursor-pointer"
           >
-            <option value="all">Alle Rollen</option>
-            <option value="admin">Admin</option>
-            <option value="user">User</option>
+            <option value="all">{t('users.allRoles')}</option>
+            <option value="admin">{t('userDetail.roleAdmin')}</option>
+            <option value="user">{t('userDetail.roleUser')}</option>
           </select>
           <ChevronDown className="absolute right-2 top-1/2 -translate-y-1/2 w-4 h-4 text-txt-muted pointer-events-none" />
         </div>
@@ -139,7 +141,7 @@ export function UserManagementPage() {
           className="flex items-center gap-2 px-3 py-2 border border-border rounded-sm text-sm text-txt-secondary hover:text-txt-primary hover:bg-bg-elevated transition-colors disabled:opacity-50"
         >
           <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-          Aktualisieren
+          {t('users.refresh')}
         </button>
       </div>
 
@@ -160,13 +162,13 @@ export function UserManagementPage() {
             <thead>
               <tr className="border-b border-border">
                 <th className="px-4 py-3 text-left text-2xs font-medium text-txt-muted uppercase tracking-wider">
-                  Benutzer
+                  {t('users.columnUser')}
                 </th>
                 <th className="px-4 py-3 text-left text-2xs font-medium text-txt-muted uppercase tracking-wider">
-                  Rolle
+                  {t('users.columnRole')}
                 </th>
                 <th className="px-4 py-3 text-left text-2xs font-medium text-txt-muted uppercase tracking-wider">
-                  Registriert
+                  {t('users.columnRegistered')}
                 </th>
                 <th className="px-4 py-3 w-10" />
               </tr>
@@ -175,7 +177,7 @@ export function UserManagementPage() {
               {filtered.length === 0 ? (
                 <tr>
                   <td colSpan={4} className="px-4 py-12 text-center text-sm text-txt-muted">
-                    Keine Benutzer gefunden.
+                    {t('users.noUsersFound')}
                   </td>
                 </tr>
               ) : (
@@ -184,6 +186,8 @@ export function UserManagementPage() {
                     key={user.id}
                     user={user}
                     currentUserId={profile?.id || ''}
+                    youLabel={t('users.you')}
+                    locale={locale}
                   />
                 ))
               )}
@@ -194,7 +198,7 @@ export function UserManagementPage() {
         {!loading && filtered.length > 0 && (
           <div className="px-4 py-3 border-t border-border">
             <p className="text-2xs text-txt-muted font-mono">
-              {filtered.length} von {users.length} Benutzer
+              {t('users.countLabel', { filtered: filtered.length, total: users.length })}
             </p>
           </div>
         )}

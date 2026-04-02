@@ -1,9 +1,13 @@
 import { useState, type FormEvent } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { Hexagon, ArrowRight, Loader2 } from 'lucide-react';
+import { useLocale } from '@/context/LocaleContext';
+import { Hexagon, ArrowRight, Loader2, Globe } from 'lucide-react';
+import type { Locale } from '@/i18n';
+import type { TranslationKey } from '@/context/LocaleContext';
 
 export function LoginPage() {
   const { signIn, signUp } = useAuth();
+  const { t, locale, setLocale } = useLocale();
   const [isRegister, setIsRegister] = useState(false);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,7 +27,7 @@ export function LoginPage() {
       if (error) {
         setError(error);
       } else {
-        setSuccess('Registrierung erfolgreich. Bitte bestätige deine E-Mail.');
+        setSuccess(t('auth.registerSuccess'));
       }
     } else {
       const { error } = await signIn(email, password);
@@ -32,6 +36,9 @@ export function LoginPage() {
 
     setLoading(false);
   };
+
+  // Error keys from AuthContext are translation keys
+  const displayError = error ? t(error as TranslationKey) : '';
 
   return (
     <div className="min-h-screen bg-bg-primary bg-dot-pattern flex items-center justify-center px-4">
@@ -44,37 +51,52 @@ export function LoginPage() {
               <span className="font-mono text-xs font-bold text-accent">A</span>
             </div>
           </div>
-          <div>
+          <div className="flex-1">
             <h1 className="font-mono text-xl font-bold tracking-tight">AAS Tools</h1>
             <p className="text-2xs text-txt-muted font-mono uppercase tracking-widest">
               Asset Administration Shell
             </p>
+          </div>
+          {/* Language toggle */}
+          <div className="flex items-center gap-1">
+            <Globe className="w-4 h-4 text-txt-muted" />
+            {(['de', 'en'] as Locale[]).map(l => (
+              <button
+                key={l}
+                onClick={() => setLocale(l)}
+                className={`text-xs font-mono font-medium px-2 py-1 rounded-sm transition-colors ${
+                  locale === l
+                    ? 'bg-accent text-bg-primary'
+                    : 'text-txt-muted hover:text-txt-primary'
+                }`}
+              >
+                {l.toUpperCase()}
+              </button>
+            ))}
           </div>
         </div>
 
         {/* Card */}
         <div className="bg-bg-surface border border-border rounded p-6">
           <h2 className="font-mono text-lg font-semibold mb-1">
-            {isRegister ? 'Konto erstellen' : 'Anmelden'}
+            {isRegister ? t('auth.signUp') : t('auth.signIn')}
           </h2>
           <p className="text-sm text-txt-secondary mb-6">
-            {isRegister
-              ? 'Erstelle ein Konto um die AAS Tools zu nutzen.'
-              : 'Melde dich an um fortzufahren.'}
+            {isRegister ? t('auth.signUpSubtitle') : t('auth.signInSubtitle')}
           </p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             {isRegister && (
               <div>
                 <label className="block text-xs font-medium text-txt-secondary uppercase tracking-wider mb-1.5">
-                  Name
+                  {t('auth.name')}
                 </label>
                 <input
                   type="text"
                   value={displayName}
                   onChange={e => setDisplayName(e.target.value)}
                   className="w-full bg-bg-input border border-border rounded-sm px-3 py-2.5 text-sm text-txt-primary placeholder:text-txt-muted focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors"
-                  placeholder="Dein Name"
+                  placeholder={t('auth.namePlaceholder')}
                   required={isRegister}
                 />
               </div>
@@ -82,21 +104,21 @@ export function LoginPage() {
 
             <div>
               <label className="block text-xs font-medium text-txt-secondary uppercase tracking-wider mb-1.5">
-                E-Mail
+                {t('auth.email')}
               </label>
               <input
                 type="email"
                 value={email}
                 onChange={e => setEmail(e.target.value)}
                 className="w-full bg-bg-input border border-border rounded-sm px-3 py-2.5 text-sm text-txt-primary placeholder:text-txt-muted focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors"
-                placeholder="name@beispiel.de"
+                placeholder={t('auth.emailPlaceholder')}
                 required
               />
             </div>
 
             <div>
               <label className="block text-xs font-medium text-txt-secondary uppercase tracking-wider mb-1.5">
-                Passwort
+                {t('auth.password')}
               </label>
               <input
                 type="password"
@@ -109,9 +131,9 @@ export function LoginPage() {
               />
             </div>
 
-            {error && (
+            {displayError && (
               <div className="bg-red-500/10 border border-red-500/20 rounded-sm px-3 py-2 text-sm text-red-400">
-                {error}
+                {displayError}
               </div>
             )}
 
@@ -130,7 +152,7 @@ export function LoginPage() {
                 <Loader2 className="w-4 h-4 animate-spin" />
               ) : (
                 <>
-                  {isRegister ? 'Registrieren' : 'Anmelden'}
+                  {isRegister ? t('auth.register') : t('auth.signIn')}
                   <ArrowRight className="w-4 h-4" />
                 </>
               )}
@@ -147,8 +169,9 @@ export function LoginPage() {
               className="text-sm text-txt-secondary hover:text-accent transition-colors"
             >
               {isRegister
-                ? 'Bereits ein Konto? Anmelden'
-                : 'Noch kein Konto? Registrieren'}
+                ? <>{t('auth.alreadyHaveAccount')} <span className="text-accent">{t('auth.signIn')}</span></>
+                : <>{t('auth.noAccount')} <span className="text-accent">{t('auth.register')}</span></>
+              }
             </button>
           </div>
         </div>
