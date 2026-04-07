@@ -49,6 +49,17 @@ export const tools: ToolDefinition[] = [
     component: lazy(() => import('./excel-connector')),
   },
   {
+    id: 'global-connector',
+    name: 'Global Connector',
+    description: 'Globale Werte als Live-Datenquelle für die API.',
+    icon: 'Globe',
+    iconColor: 'text-orange-400',
+    category: 'connector',
+    status: 'active',
+    requiredRole: 'user',
+    component: lazy(() => import('./global-connector')),
+  },
+  {
     id: 'use-case-checker',
     name: 'Use Case Checker',
     description: 'AAS gegen definierte Use Cases evaluieren.',

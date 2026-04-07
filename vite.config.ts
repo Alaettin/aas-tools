@@ -22,6 +22,10 @@ export default defineConfig(({ mode }) => {
           target: `${env.VITE_SUPABASE_URL}/functions/v1`,
           changeOrigin: true,
         },
+        '/global-api': {
+          target: `${env.VITE_SUPABASE_URL}/functions/v1`,
+          changeOrigin: true,
+        },
       },
     },
   };
