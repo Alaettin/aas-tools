@@ -74,7 +74,7 @@ export function ConnectorDetail() {
           className="flex items-center gap-2 text-xs text-txt-muted hover:text-accent transition-colors mb-3 font-mono"
         >
           <ArrowLeft className="w-3 h-3" />
-          DTI Connector
+          SQL Connector
         </button>
         <h1 className="font-mono text-2xl font-bold">{connector.name}</h1>
       </div>

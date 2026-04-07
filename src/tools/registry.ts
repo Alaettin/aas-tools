@@ -8,6 +8,7 @@ export interface ToolDefinition {
   description: string;
   icon: string;
   iconColor: string;
+  category: 'tool' | 'connector' | 'application';
   status: ToolStatus;
   requiredRole: 'user' | 'admin';
   component: LazyExoticComponent<ComponentType>;
@@ -16,10 +17,11 @@ export interface ToolDefinition {
 export const tools: ToolDefinition[] = [
   {
     id: 'dti-connector',
-    name: 'DTI Connector',
-    description: 'DTI Daten verwalten — Hierarchien, Modelle, Files und Assets.',
+    name: 'SQL Connector',
+    description: 'Daten verwalten — Hierarchien, Modelle, Files und Assets.',
     icon: 'Database',
     iconColor: 'text-accent',
+    category: 'connector',
     status: 'active',
     requiredRole: 'user',
     component: lazy(() => import('./dti-connector')),
@@ -30,6 +32,7 @@ export const tools: ToolDefinition[] = [
     description: 'AAS-Dokumente visuell erstellen und bearbeiten.',
     icon: 'Hexagon',
     iconColor: 'text-purple-400',
+    category: 'tool',
     status: 'active',
     requiredRole: 'user',
     component: lazy(() => import('./aas-editor')),
@@ -40,9 +43,21 @@ export const tools: ToolDefinition[] = [
     description: 'Excel-Dateien als Live-Datenquelle für die API.',
     icon: 'FileSpreadsheet',
     iconColor: 'text-emerald-400',
+    category: 'connector',
     status: 'active',
     requiredRole: 'user',
     component: lazy(() => import('./excel-connector')),
+  },
+  {
+    id: 'use-case-checker',
+    name: 'Use Case Checker',
+    description: 'AAS gegen definierte Use Cases evaluieren.',
+    icon: 'ClipboardCheck',
+    iconColor: 'text-sky-400',
+    category: 'application',
+    status: 'active',
+    requiredRole: 'user',
+    component: lazy(() => import('./use-case-checker')),
   },
 ];
 

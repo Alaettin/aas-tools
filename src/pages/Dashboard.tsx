@@ -18,7 +18,9 @@ interface ActivityItem {
 }
 
 export function DashboardPage() {
-  const { profile } = useAuth();
+  const { profile, isAdmin, toolAccess } = useAuth();
+
+  const hasAccess = (toolId: string) => isAdmin || toolAccess.includes(toolId);
   const { t, locale } = useLocale();
   const [stats, setStats] = useState<Stats | null>(null);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
@@ -95,6 +97,7 @@ export function DashboardPage() {
         ];
         items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
         setActivity(items.slice(0, 10));
+
       } catch {
         // silently fail — dashboard is non-critical
       }
@@ -105,7 +108,7 @@ export function DashboardPage() {
   }, [profile]);
 
   const typeLabel: Record<string, string> = {
-    dti: 'DTI Connector',
+    dti: 'SQL Connector',
     aas: 'AAS Editor',
     excel: 'Excel Connector',
   };
@@ -131,42 +134,52 @@ export function DashboardPage() {
         <div className="flex items-center justify-center py-8">
           <Loader2 className="w-5 h-5 text-accent animate-spin" />
         </div>
-      ) : stats && (
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
-          <div className="bg-bg-surface border border-border rounded p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-accent/10 rounded">
-                <Database className="w-5 h-5 text-accent" />
+      ) : stats && (() => {
+        const cards = [
+          hasAccess('dti-connector') && (
+            <div key="dti" className="bg-bg-surface border border-border rounded p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-accent/10 rounded">
+                  <Database className="w-5 h-5 text-accent" />
+                </div>
+                <p className="text-xs font-medium text-txt-muted uppercase tracking-wider">SQL Connector</p>
               </div>
-              <p className="text-xs font-medium text-txt-muted uppercase tracking-wider">DTI Connector</p>
+              <p className="text-2xl font-mono font-bold">{stats.dtiConnectors}</p>
+              <p className="text-xs text-txt-muted mt-1">{stats.dtiConnectors === 1 ? 'Connector' : 'Connectors'} · {stats.dtiAssets} Assets</p>
             </div>
-            <p className="text-2xl font-mono font-bold">{stats.dtiConnectors}</p>
-            <p className="text-xs text-txt-muted mt-1">{stats.dtiConnectors === 1 ? 'Connector' : 'Connectors'} · {stats.dtiAssets} Assets</p>
-          </div>
+          ),
+          hasAccess('aas-editor') && (
+            <div key="aas" className="bg-bg-surface border border-border rounded p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-purple-400/10 rounded">
+                  <Hexagon className="w-5 h-5 text-purple-400" />
+                </div>
+                <p className="text-xs font-medium text-txt-muted uppercase tracking-wider">AAS Editor</p>
+              </div>
+              <p className="text-2xl font-mono font-bold">{stats.aasProjects}</p>
+              <p className="text-xs text-txt-muted mt-1">{stats.aasProjects === 1 ? 'Project' : 'Projects'}</p>
+            </div>
+          ),
+          hasAccess('excel-connector') && (
+            <div key="excel" className="bg-bg-surface border border-border rounded p-5">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="p-2 bg-emerald-400/10 rounded">
+                  <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
+                </div>
+                <p className="text-xs font-medium text-txt-muted uppercase tracking-wider">Excel Connector</p>
+              </div>
+              <p className="text-2xl font-mono font-bold">{stats.excelConnectors}</p>
+              <p className="text-xs text-txt-muted mt-1">{stats.excelConnectors === 1 ? 'Connector' : 'Connectors'}</p>
+            </div>
+          ),
+        ].filter(Boolean);
 
-          <div className="bg-bg-surface border border-border rounded p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-purple-400/10 rounded">
-                <Hexagon className="w-5 h-5 text-purple-400" />
-              </div>
-              <p className="text-xs font-medium text-txt-muted uppercase tracking-wider">AAS Editor</p>
-            </div>
-            <p className="text-2xl font-mono font-bold">{stats.aasProjects}</p>
-            <p className="text-xs text-txt-muted mt-1">{stats.aasProjects === 1 ? 'Project' : 'Projects'}</p>
+        return cards.length > 0 ? (
+          <div className={`grid grid-cols-1 ${cards.length === 1 ? 'sm:grid-cols-1 max-w-sm' : cards.length === 2 ? 'sm:grid-cols-2 max-w-2xl' : 'sm:grid-cols-3'} gap-4 mb-8`}>
+            {cards}
           </div>
-
-          <div className="bg-bg-surface border border-border rounded p-5">
-            <div className="flex items-center gap-3 mb-3">
-              <div className="p-2 bg-emerald-400/10 rounded">
-                <FileSpreadsheet className="w-5 h-5 text-emerald-400" />
-              </div>
-              <p className="text-xs font-medium text-txt-muted uppercase tracking-wider">Excel Connector</p>
-            </div>
-            <p className="text-2xl font-mono font-bold">{stats.excelConnectors}</p>
-            <p className="text-xs text-txt-muted mt-1">{stats.excelConnectors === 1 ? 'Connector' : 'Connectors'}</p>
-          </div>
-        </div>
-      )}
+        ) : null;
+      })()}
 
       {/* Activity Feed */}
       <div>
@@ -180,7 +193,10 @@ export function DashboardPage() {
               <p className="text-xs text-txt-muted">{t('dashboard.noActivity')}</p>
             </div>
           ) : (
-            activity.map((item, i) => (
+            activity.filter(item => {
+              const toolMap: Record<string, string> = { dti: 'dti-connector', aas: 'aas-editor', excel: 'excel-connector' };
+              return hasAccess(toolMap[item.type]);
+            }).map((item, i) => (
               <div key={`${item.type}-${item.name}-${i}`}
                 className="flex items-start gap-3 px-4 py-3 border-b border-border last:border-0">
                 <div className="mt-0.5">{typeIcon[item.type]}</div>

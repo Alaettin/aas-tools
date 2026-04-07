@@ -312,7 +312,7 @@ export function ApiDocs({ apiKey, baseUrl }: ApiDocsProps) {
     <div className="space-y-6">
       <div>
         <h2 className="font-mono text-lg font-semibold mb-1">API Documentation</h2>
-        <p className="text-sm text-txt-secondary">Public REST API for the DTI Connector.</p>
+        <p className="text-sm text-txt-secondary">Public REST API for the SQL Connector.</p>
       </div>
 
       {/* Base URL */}

@@ -34,9 +34,9 @@ export function ConnectorList() {
   return (
     <div className="max-w-5xl animate-fade-in">
       <div className="mb-6">
-        <h1 className="font-mono text-2xl font-bold">DTI Connector</h1>
+        <h1 className="font-mono text-2xl font-bold">SQL Connector</h1>
         <p className="text-sm text-txt-secondary mt-1">
-          Verwalte deine DTI Connectors.
+          Verwalte deine SQL Connectors.
         </p>
       </div>
 

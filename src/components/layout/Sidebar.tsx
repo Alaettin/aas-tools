@@ -17,12 +17,14 @@ import {
   Wrench,
   GraduationCap,
   BookMarked,
+  ClipboardCheck,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, (cls: string) => React.ReactNode> = {
   Database: (cls) => <Database className={cls} />,
   Hexagon: (cls) => <Hexagon className={cls} strokeWidth={1.5} />,
   FileSpreadsheet: (cls) => <FileSpreadsheet className={cls} />,
+  ClipboardCheck: (cls) => <ClipboardCheck className={cls} />,
 };
 
 const DOC_ICON_MAP: Record<string, (cls: string) => React.ReactNode> = {
@@ -80,9 +82,13 @@ export function Sidebar() {
   const { t } = useLocale();
   const [manuals, setManuals] = useState<Manual[]>([]);
 
-  const activeTools = getActiveTools()
+  const accessible = getActiveTools()
     .filter(tool => isAdmin || toolAccess.includes(tool.id))
     .sort((a, b) => a.name.localeCompare(b.name));
+
+  const toolItems = accessible.filter(t => t.category === 'tool');
+  const connectorItems = accessible.filter(t => t.category === 'connector');
+  const applicationItems = accessible.filter(t => t.category === 'application');
 
   // Load accessible manuals for DOCS section
   useEffect(() => {
@@ -112,9 +118,6 @@ export function Sidebar() {
     },
   ];
 
-  const visibleSystemItems = systemItems.filter(
-    (item: NavItem) => !item.adminOnly || isAdmin
-  );
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-[260px] bg-bg-surface border-r border-border flex flex-col z-30">
@@ -142,14 +145,66 @@ export function Sidebar() {
           <NavLinkItem item={{ label: t('nav.dashboard'), path: '/', icon: <LayoutDashboard className="w-[18px] h-[18px]" /> }} />
         </div>
 
-        {/* Active Tools */}
-        {activeTools.length > 0 && (
+        {/* Tools (AAS Editor) */}
+        {toolItems.length > 0 && (
           <>
             <p className="px-3 mt-6 mb-3 text-2xs font-medium text-txt-muted uppercase tracking-widest">
               {t('nav.tools')}
             </p>
             <div className="space-y-1">
-              {activeTools.map(tool => {
+              {toolItems.map(tool => {
+                const renderIcon = ICON_MAP[tool.icon];
+                return (
+                  <NavLinkItem
+                    key={tool.id}
+                    item={{
+                      label: tool.name,
+                      path: `/tools/${tool.id}`,
+                      icon: renderIcon
+                        ? renderIcon(`w-[18px] h-[18px] ${tool.iconColor}`)
+                        : <Hexagon className={`w-[18px] h-[18px] ${tool.iconColor}`} strokeWidth={1.5} />,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Connectors (DTI, Excel) */}
+        {connectorItems.length > 0 && (
+          <>
+            <p className="px-3 mt-6 mb-3 text-2xs font-medium text-txt-muted uppercase tracking-widest">
+              {t('nav.connectors')}
+            </p>
+            <div className="space-y-1">
+              {connectorItems.map(tool => {
+                const renderIcon = ICON_MAP[tool.icon];
+                return (
+                  <NavLinkItem
+                    key={tool.id}
+                    item={{
+                      label: tool.name,
+                      path: `/tools/${tool.id}`,
+                      icon: renderIcon
+                        ? renderIcon(`w-[18px] h-[18px] ${tool.iconColor}`)
+                        : <Hexagon className={`w-[18px] h-[18px] ${tool.iconColor}`} strokeWidth={1.5} />,
+                    }}
+                  />
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {/* Applications */}
+        {applicationItems.length > 0 && (
+          <>
+            <p className="px-3 mt-6 mb-3 text-2xs font-medium text-txt-muted uppercase tracking-widest">
+              {t('nav.applications')}
+            </p>
+            <div className="space-y-1">
+              {applicationItems.map(tool => {
                 const renderIcon = ICON_MAP[tool.icon];
                 return (
                   <NavLinkItem
@@ -194,25 +249,27 @@ export function Sidebar() {
           </>
         )}
 
-        {/* System */}
-        <p className="px-3 mt-6 mb-3 text-2xs font-medium text-txt-muted uppercase tracking-widest">
-          {t('nav.system')}
-        </p>
-        <div className="space-y-1">
-          {visibleSystemItems.map(item => (
-            <NavLinkItem key={item.path} item={item} />
-          ))}
-          {isAdmin && (
-            <NavLinkItem
-              item={{
-                label: t('nav.manageDocs'),
-                path: '/docs/admin',
-                icon: <BookMarked className="w-[18px] h-[18px]" />,
-                adminOnly: true,
-              }}
-            />
-          )}
-        </div>
+        {/* System (admin only) */}
+        {isAdmin && (
+          <>
+            <p className="px-3 mt-6 mb-3 text-2xs font-medium text-txt-muted uppercase tracking-widest">
+              {t('nav.system')}
+            </p>
+            <div className="space-y-1">
+              {systemItems.map(item => (
+                <NavLinkItem key={item.path} item={item} />
+              ))}
+              <NavLinkItem
+                item={{
+                  label: t('nav.manageDocs'),
+                  path: '/docs/admin',
+                  icon: <BookMarked className="w-[18px] h-[18px]" />,
+                  adminOnly: true,
+                }}
+              />
+            </div>
+          </>
+        )}
       </nav>
 
       {/* Footer */}
