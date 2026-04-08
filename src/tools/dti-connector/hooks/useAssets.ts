@@ -25,7 +25,7 @@ export function useAssets(connectorId: string) {
       }
     } catch {
       if (!mountedRef.current) return;
-      setError('Verbindung fehlgeschlagen.');
+      setError('common.connectionFailed');
     }
     setLoading(false);
   }, [connectorId]);
@@ -65,7 +65,7 @@ export function useAssets(connectorId: string) {
       .insert({ connector_id: connectorId, asset_id: newId.trim() });
 
     if (insErr) {
-      setError('Umbenennen fehlgeschlagen.');
+      setError('common.renameFailed');
       return false;
     }
 

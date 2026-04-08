@@ -2,12 +2,14 @@ import { useState, useMemo } from 'react';
 import { Plus, Trash2, Save, Loader2, Search } from 'lucide-react';
 import { useModel } from '../hooks/useModel';
 import { validateDatapointId } from '../lib/validation';
+import { useLocale } from '@/context/LocaleContext';
 
 interface ModelEditorProps {
   connectorId: string;
 }
 
 export function ModelEditor({ connectorId }: ModelEditorProps) {
+  const { t } = useLocale();
   const {
     datapoints, loading, saving, error, hasChanges,
     addDatapoint, removeDatapoints, updateDatapoint, save,
@@ -99,7 +101,7 @@ export function ModelEditor({ connectorId }: ModelEditorProps) {
             className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-40"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Speichern
+            {t('common.save')}
           </button>
         </div>
       </div>
@@ -113,7 +115,7 @@ export function ModelEditor({ connectorId }: ModelEditorProps) {
       {/* Table */}
       {datapoints.length === 0 ? (
         <div className="bg-bg-surface border border-border rounded p-8 text-center mb-4">
-          <p className="text-sm text-txt-secondary">Noch keine Datapoints vorhanden.</p>
+          <p className="text-sm text-txt-secondary">{t('dti.noDatapoints')}</p>
         </div>
       ) : (
         <div className="bg-bg-surface border border-border rounded overflow-hidden mb-4">

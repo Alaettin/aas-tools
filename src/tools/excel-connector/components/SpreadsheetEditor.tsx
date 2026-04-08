@@ -7,6 +7,7 @@ import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 import { supabase } from '@/lib/supabase';
 import { validateExcel } from '../lib/validate';
+import { useLocale } from '@/context/LocaleContext';
 
 registerAllModules();
 
@@ -35,6 +36,7 @@ export function SpreadsheetEditor({ excelPath, documentNames = [] }: Spreadsheet
   const hotRef = useRef<HotTableClass>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const savedTimerRef = useRef<ReturnType<typeof setTimeout>>();
+  const { t } = useLocale();
 
   const loadExcel = useCallback(async () => {
     if (!excelPath) { setLoading(false); return; }
@@ -45,7 +47,7 @@ export function SpreadsheetEditor({ excelPath, documentNames = [] }: Spreadsheet
     try {
       const buf = await downloadFresh('excel-connectors', excelPath);
       if (!buf) {
-        setError(['Excel konnte nicht geladen werden. Prüfe deine Internetverbindung.']);
+        setError([t('common.excelLoadFailed')]);
         setLoadFailed(true);
         setLoading(false);
         return;
@@ -54,7 +56,7 @@ export function SpreadsheetEditor({ excelPath, documentNames = [] }: Spreadsheet
       const wb = read(buf, { type: 'array' });
       const ws = wb.Sheets[wb.SheetNames[0]];
       if (!ws) {
-        setError(['Die Excel-Datei enthält kein Sheet.']);
+        setError([t('common.excelNoSheet')]);
         setLoadFailed(true);
         setLoading(false);
         return;
@@ -64,7 +66,7 @@ export function SpreadsheetEditor({ excelPath, documentNames = [] }: Spreadsheet
       setData(rows);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
-      setError([msg.includes('Invalid') ? 'Die Excel-Datei ist beschädigt oder hat ein ungültiges Format.' : 'Fehler beim Laden: ' + msg]);
+      setError([msg.includes('Invalid') ? t('common.excelCorrupt') : t('common.excelLoadError') + msg]);
       setLoadFailed(true);
     }
     setLoading(false);
@@ -114,11 +116,11 @@ export function SpreadsheetEditor({ excelPath, documentNames = [] }: Spreadsheet
 
       if (uploadErr) {
         if (uploadErr.message.includes('Payload too large')) {
-          setError(['Datei ist zu groß (max. 50 MB).']);
+          setError([t('common.fileTooLarge')]);
         } else if (uploadErr.message.includes('not found')) {
-          setError(['Storage-Bucket nicht gefunden. Kontaktiere den Admin.']);
+          setError([t('common.bucketNotFound')]);
         } else {
-          setError(['Speichern fehlgeschlagen: ' + uploadErr.message]);
+          setError([t('common.saveFailed') + ': ' + uploadErr.message]);
         }
       } else {
         setSaved(true);
@@ -126,7 +128,7 @@ export function SpreadsheetEditor({ excelPath, documentNames = [] }: Spreadsheet
         savedTimerRef.current = setTimeout(() => setSaved(false), 2000);
       }
     } catch (e) {
-      setError(['Speichern fehlgeschlagen: ' + (e instanceof Error ? e.message : String(e))]);
+      setError([t('common.saveFailed') + ': ' + (e instanceof Error ? e.message : String(e))]);
     }
     setSaving(false);
   };
@@ -158,13 +160,13 @@ export function SpreadsheetEditor({ excelPath, documentNames = [] }: Spreadsheet
       try {
         const wb = read(buf, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        if (!ws) { setError(['Die Datei enthält kein Sheet.']); return; }
+        if (!ws) { setError([t('common.fileNoSheet')]); return; }
         const rows = utils.sheet_to_json<(string | number | null)[]>(ws, { header: 1, defval: '' });
         setData(rows);
         setWarnings([]);
         setError(null);
       } catch {
-        setError(['Die Datei konnte nicht gelesen werden.']);
+        setError([t('common.fileReadFailed')]);
       }
     };
     reader.readAsArrayBuffer(file);
@@ -174,7 +176,7 @@ export function SpreadsheetEditor({ excelPath, documentNames = [] }: Spreadsheet
   if (!excelPath) {
     return (
       <div className="bg-bg-surface border border-border rounded p-8 text-center">
-        <p className="text-sm text-txt-secondary">Keine Excel-Datei vorhanden.</p>
+        <p className="text-sm text-txt-secondary">{t('common.noExcelFile')}</p>
       </div>
     );
   }
@@ -197,7 +199,7 @@ export function SpreadsheetEditor({ excelPath, documentNames = [] }: Spreadsheet
           className="inline-flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors"
         >
           <RotateCcw className="w-4 h-4" />
-          Erneut versuchen
+          {t('common.retry')}
         </button>
       </div>
     );
@@ -230,7 +232,7 @@ export function SpreadsheetEditor({ excelPath, documentNames = [] }: Spreadsheet
             className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-50"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-            {saved ? 'Gespeichert' : 'Speichern'}
+            {saved ? t('common.saved') : t('common.save')}
           </button>
         </div>
       </div>
@@ -240,7 +242,7 @@ export function SpreadsheetEditor({ excelPath, documentNames = [] }: Spreadsheet
         <div className="bg-red-500/10 border border-red-500/20 rounded-sm px-3 py-2 text-sm text-red-400 mb-3">
           <div className="flex items-center gap-2 mb-1">
             <XCircle className="w-4 h-4 flex-shrink-0" />
-            <span className="font-medium">Fehler</span>
+            <span className="font-medium">{t('common.errors')}</span>
           </div>
           <ul className="list-disc list-inside text-xs space-y-0.5 ml-6">
             {error.map((e, i) => <li key={i}>{e}</li>)}
@@ -253,7 +255,7 @@ export function SpreadsheetEditor({ excelPath, documentNames = [] }: Spreadsheet
         <div className="bg-amber-500/10 border border-amber-500/20 rounded-sm px-3 py-2 text-sm text-amber-400 mb-3">
           <div className="flex items-center gap-2 mb-1">
             <AlertTriangle className="w-4 h-4 flex-shrink-0" />
-            <span className="font-medium">Warnungen</span>
+            <span className="font-medium">{t('common.warnings')}</span>
           </div>
           <ul className="list-disc list-inside text-xs space-y-0.5 ml-6">
             {warnings.map((w, i) => <li key={i}>{w}</li>)}

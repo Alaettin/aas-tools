@@ -2,18 +2,12 @@ import { useState, useEffect } from 'react';
 import { ArrowLeft, Loader2, FileSpreadsheet, FolderOpen, Code, Settings } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import { withTimeout } from '@/lib/fetch-with-timeout';
+import { useLocale } from '@/context/LocaleContext';
 import type { ExcelConnector, ExcelConnectorTab } from '../types';
 import { FileManager } from './FileManager';
 import { ApiSettings } from './ApiSettings';
 import { SpreadsheetEditor } from './SpreadsheetEditor';
 import { ConnectorSettings } from './ConnectorSettings';
-
-const tabs: { id: ExcelConnectorTab; label: string; icon: React.ReactNode }[] = [
-  { id: 'excel', label: 'Excel', icon: <FileSpreadsheet className="w-4 h-4" /> },
-  { id: 'documents', label: 'Documents', icon: <FolderOpen className="w-4 h-4" /> },
-  { id: 'api', label: 'API', icon: <Code className="w-4 h-4" /> },
-  { id: 'settings', label: 'Settings', icon: <Settings className="w-4 h-4" /> },
-];
 
 interface ConnectorDetailProps {
   connectorId: string;
@@ -21,6 +15,13 @@ interface ConnectorDetailProps {
 }
 
 export function ConnectorDetail({ connectorId, onBack }: ConnectorDetailProps) {
+  const { t } = useLocale();
+  const tabs: { id: ExcelConnectorTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'excel', label: t('connector.tabExcel'), icon: <FileSpreadsheet className="w-4 h-4" /> },
+    { id: 'documents', label: t('connector.tabDocuments'), icon: <FolderOpen className="w-4 h-4" /> },
+    { id: 'api', label: t('connector.tabApi'), icon: <Code className="w-4 h-4" /> },
+    { id: 'settings', label: t('connector.tabSettings'), icon: <Settings className="w-4 h-4" /> },
+  ];
   const [connector, setConnector] = useState<ExcelConnector | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ExcelConnectorTab>('excel');

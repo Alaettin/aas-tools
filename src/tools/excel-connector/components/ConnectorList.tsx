@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Plus, Loader2, FileSpreadsheet, Pencil, Trash2, Check, X, Key } from 'lucide-react';
 import { useExcelConnectors } from '../hooks/useExcelConnectors';
+import { useLocale } from '@/context/LocaleContext';
 
 interface ConnectorListProps {
   onSelect: (connectorId: string) => void;
 }
 
 export function ConnectorList({ onSelect }: ConnectorListProps) {
+  const { t } = useLocale();
   const { connectors, loading, error, createConnector, deleteConnector, renameConnector } = useExcelConnectors();
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -45,9 +47,6 @@ export function ConnectorList({ onSelect }: ConnectorListProps) {
     <div className="max-w-5xl animate-fade-in">
       <div className="mb-6">
         <h1 className="font-mono text-2xl font-bold">Excel Connector</h1>
-        <p className="text-sm text-txt-secondary mt-1">
-          Excel-Dateien als Live-Datenquelle für die API.
-        </p>
       </div>
 
       {error && (
@@ -61,13 +60,13 @@ export function ConnectorList({ onSelect }: ConnectorListProps) {
             value={newName}
             onChange={e => setNewName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleCreate(); }}
-            placeholder="Neuer Connector Name…"
+            placeholder={t('connector.newPlaceholder')}
             className="flex-1 bg-bg-input border border-border rounded-sm px-3 py-2 text-sm text-txt-primary placeholder:text-txt-muted focus:border-accent focus:ring-1 focus:ring-accent/30"
           />
           <button onClick={handleCreate} disabled={creating || !newName.trim()}
             className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-50">
             {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            Erstellen
+            {t('common.create')}
           </button>
         </div>
       </div>
@@ -75,7 +74,7 @@ export function ConnectorList({ onSelect }: ConnectorListProps) {
       {connectors.length === 0 ? (
         <div className="bg-bg-surface border border-border rounded p-10 text-center">
           <FileSpreadsheet className="w-10 h-10 text-txt-muted mx-auto mb-3" />
-          <p className="text-sm text-txt-secondary">Noch keine Excel Connectors.</p>
+          <p className="text-sm text-txt-secondary">{t('excelConnector.noConnectors')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -118,9 +117,9 @@ export function ConnectorList({ onSelect }: ConnectorListProps) {
                 {deletingId === c.connector_id && (
                   <div className="mt-3 pt-3 border-t border-border flex items-center gap-2">
                     <button onClick={() => handleDelete(c.connector_id)}
-                      className="flex-1 text-xs font-medium text-red-400 bg-red-400/10 hover:bg-red-400/20 border border-red-400/20 rounded-sm py-1.5">Löschen</button>
+                      className="flex-1 text-xs font-medium text-red-400 bg-red-400/10 hover:bg-red-400/20 border border-red-400/20 rounded-sm py-1.5">{t('common.delete')}</button>
                     <button onClick={() => setDeletingId(null)}
-                      className="flex-1 text-xs text-txt-secondary bg-bg-elevated rounded-sm py-1.5">Abbrechen</button>
+                      className="flex-1 text-xs text-txt-secondary bg-bg-elevated rounded-sm py-1.5">{t('common.cancel')}</button>
                   </div>
                 )}
               </div>

@@ -1,12 +1,14 @@
 import { useState } from 'react';
 import { Plus, Loader2, Hexagon, Pencil, Trash2, Check, X } from 'lucide-react';
 import { useProjects } from '../hooks/useProjects';
+import { useLocale } from '@/context/LocaleContext';
 
 interface ProjectListProps {
   onSelect: (projectId: string) => void;
 }
 
 export function ProjectList({ onSelect }: ProjectListProps) {
+  const { t } = useLocale();
   const { projects, loading, error, createProject, renameProject, deleteProject } = useProjects();
   const [newName, setNewName] = useState('');
   const [creating, setCreating] = useState(false);
@@ -48,9 +50,6 @@ export function ProjectList({ onSelect }: ProjectListProps) {
     <div className="max-w-5xl animate-fade-in">
       <div className="mb-6">
         <h1 className="font-mono text-2xl font-bold">AAS Editor</h1>
-        <p className="text-sm text-txt-secondary mt-1">
-          Erstelle und bearbeite AAS-Dokumente visuell.
-        </p>
       </div>
 
       {error && (
@@ -67,7 +66,7 @@ export function ProjectList({ onSelect }: ProjectListProps) {
             value={newName}
             onChange={e => setNewName(e.target.value)}
             onKeyDown={e => { if (e.key === 'Enter') handleCreate(); }}
-            placeholder="Neues Projekt…"
+            placeholder={t('aasEditor.newProject')}
             className="flex-1 bg-bg-input border border-border rounded-sm px-3 py-2 text-sm text-txt-primary placeholder:text-txt-muted focus:border-accent focus:ring-1 focus:ring-accent/30 transition-colors"
           />
           <button
@@ -76,7 +75,7 @@ export function ProjectList({ onSelect }: ProjectListProps) {
             className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-50"
           >
             {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-            Erstellen
+            {t('common.create')}
           </button>
         </div>
       </div>
@@ -85,7 +84,7 @@ export function ProjectList({ onSelect }: ProjectListProps) {
       {projects.length === 0 ? (
         <div className="bg-bg-surface border border-border rounded p-10 text-center">
           <Hexagon className="w-10 h-10 text-txt-muted mx-auto mb-3" strokeWidth={1.5} />
-          <p className="text-sm text-txt-secondary">Noch keine Projekte vorhanden.</p>
+          <p className="text-sm text-txt-secondary">{t('aasEditor.noProjects')}</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -156,13 +155,13 @@ export function ProjectList({ onSelect }: ProjectListProps) {
                       onClick={() => handleDelete(project.id)}
                       className="flex-1 text-xs font-medium text-red-400 bg-red-400/10 hover:bg-red-400/20 border border-red-400/20 rounded-sm py-1.5"
                     >
-                      Löschen
+                      {t('common.delete')}
                     </button>
                     <button
                       onClick={() => setDeletingId(null)}
                       className="flex-1 text-xs text-txt-secondary bg-bg-elevated rounded-sm py-1.5"
                     >
-                      Abbrechen
+                      {t('common.cancel')}
                     </button>
                   </div>
                 )}

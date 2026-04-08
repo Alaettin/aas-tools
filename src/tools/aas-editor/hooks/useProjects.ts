@@ -36,7 +36,7 @@ export function useProjects() {
         }
       } catch {
         if (cancelled) return;
-        setError('Verbindung fehlgeschlagen.');
+        setError('common.connectionFailed');
       }
       setLoading(false);
     })();

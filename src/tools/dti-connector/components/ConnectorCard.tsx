@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Pencil, Trash2, Check, X, Key } from 'lucide-react';
 import type { Connector } from '../types';
 import { validateConnectorName } from '../lib/validation';
+import { useLocale } from '@/context/LocaleContext';
 
 interface ConnectorCardProps {
   connector: Connector;
@@ -11,6 +12,7 @@ interface ConnectorCardProps {
 }
 
 export function ConnectorCard({ connector, onRename, onDelete }: ConnectorCardProps) {
+  const { t } = useLocale();
   const navigate = useNavigate();
   const [editing, setEditing] = useState(false);
   const [editName, setEditName] = useState(connector.name);
@@ -81,7 +83,7 @@ export function ConnectorCard({ connector, onRename, onDelete }: ConnectorCardPr
             <button
               onClick={() => setDeleting(true)}
               className="p-1.5 text-txt-muted hover:text-red-400 hover:bg-bg-elevated rounded-sm transition-colors"
-              title="Löschen"
+              title={t('common.delete')}
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>
@@ -112,13 +114,13 @@ export function ConnectorCard({ connector, onRename, onDelete }: ConnectorCardPr
               onClick={handleDelete}
               className="flex-1 text-xs font-medium text-red-400 bg-red-400/10 hover:bg-red-400/20 border border-red-400/20 rounded-sm py-1.5 transition-colors"
             >
-              Löschen
+              {t('common.delete')}
             </button>
             <button
               onClick={() => setDeleting(false)}
               className="flex-1 text-xs text-txt-secondary hover:text-txt-primary bg-bg-elevated rounded-sm py-1.5 transition-colors"
             >
-              Abbrechen
+              {t('common.cancel')}
             </button>
           </div>
         </div>

@@ -4,6 +4,7 @@ import JSZip from 'jszip';
 import { read, write, utils } from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import type { ExcelConnector } from '../types';
+import { useLocale } from '@/context/LocaleContext';
 
 interface ConnectorSettingsProps {
   connector: ExcelConnector;
@@ -20,6 +21,7 @@ async function downloadFresh(bucket: string, path: string): Promise<ArrayBuffer 
 }
 
 export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSettingsProps) {
+  const { t } = useLocale();
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
@@ -92,7 +94,7 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
       a.click();
       URL.revokeObjectURL(url);
     } catch (e) {
-      setExportError(e instanceof Error ? e.message : 'Export fehlgeschlagen.');
+      setExportError(e instanceof Error ? e.message : t('common.exportFailed'));
     }
     setExporting(false);
   };
@@ -113,7 +115,7 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
       setImportPreview({ excelFound, docCount: docFiles.length });
       setImportZip(zip);
     } catch {
-      setImportError('ZIP-Datei konnte nicht gelesen werden.');
+      setImportError(t('common.zipReadFailed'));
     }
   };
 
@@ -131,7 +133,7 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
 
         // Validate it's a real XLSX
         const wb = read(buf, { type: 'array' });
-        if (!wb.SheetNames.length) throw new Error('Ungültige Excel-Datei.');
+        if (!wb.SheetNames.length) throw new Error(t('common.invalidExcel'));
 
         // Re-write to ensure clean format
         const ws = wb.Sheets[wb.SheetNames[0]];
@@ -146,7 +148,7 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
         const { error } = await supabase.storage
           .from('excel-connectors')
           .upload(excelPath, new Blob([newBuf]), { cacheControl: '0' });
-        if (error) throw new Error('Excel-Upload fehlgeschlagen: ' + error.message);
+        if (error) throw new Error(t('common.excelUploadFailed') + ': ' + error.message);
       }
 
       // Import documents
@@ -178,7 +180,7 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
       setImportZip(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
     } catch (e) {
-      setImportError(e instanceof Error ? e.message : 'Import fehlgeschlagen.');
+      setImportError(e instanceof Error ? e.message : t('common.importFailed'));
     }
     setImporting(false);
   };
@@ -210,29 +212,29 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
                 className="flex-1 bg-bg-input border border-border rounded-sm px-3 py-2.5 text-sm font-mono text-txt-primary cursor-default" />
               <button onClick={handleCopy}
                 className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium bg-bg-elevated hover:bg-border border border-border rounded-sm transition-colors"
-                title="Kopieren">
+                title={t('common.copy')}>
                 {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-txt-secondary" />}
               </button>
             </div>
-            <p className="text-2xs text-txt-muted mt-1.5">Verwende diesen Key für den Zugriff auf die External API.</p>
+            <p className="text-2xs text-txt-muted mt-1.5">{t('apiKey.hint')}</p>
           </div>
 
           {!confirmRegenerate ? (
             <button onClick={() => setConfirmRegenerate(true)}
               className="flex items-center gap-2 text-sm text-txt-secondary hover:text-txt-primary transition-colors">
               <RefreshCw className="w-3.5 h-3.5" />
-              Neuen Key generieren
+              {t('apiKey.generate')}
             </button>
           ) : (
             <div className="bg-red-500/5 border border-red-500/20 rounded-sm p-3">
-              <p className="text-xs text-red-400 mb-3">Der alte Key wird sofort ungültig.</p>
+              <p className="text-xs text-red-400 mb-3">{t('apiKey.invalidWarning')}</p>
               <div className="flex items-center gap-2">
                 <button onClick={handleRegenerate} disabled={regenerating}
                   className="text-xs font-medium text-red-400 bg-red-400/10 hover:bg-red-400/20 border border-red-400/20 rounded-sm px-3 py-1.5 disabled:opacity-50">
-                  {regenerating ? 'Generiere…' : 'Key erneuern'}
+                  {regenerating ? t('apiKey.regenerating') : t('apiKey.regenerate')}
                 </button>
                 <button onClick={() => setConfirmRegenerate(false)}
-                  className="text-xs text-txt-muted hover:text-txt-primary px-3 py-1.5">Abbrechen</button>
+                  className="text-xs text-txt-muted hover:text-txt-primary px-3 py-1.5">{t('common.cancel')}</button>
               </div>
             </div>
           )}
@@ -248,12 +250,12 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
           </div>
         </div>
         <div className="p-5 space-y-4">
-          <p className="text-xs text-txt-muted">Exportiert die Excel-Datei und alle Dokumente als ZIP.</p>
+          <p className="text-xs text-txt-muted">{t('common.exportDesc')}</p>
           {exportError && <p className="text-xs text-red-400">{exportError}</p>}
           <button onClick={handleExport} disabled={exporting}
             className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-40">
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            Exportieren
+            {t('common.export')}
           </button>
         </div>
       </div>
@@ -268,7 +270,7 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <p className="text-xs text-txt-muted mb-2">ZIP-Datei auswählen:</p>
+            <p className="text-xs text-txt-muted mb-2">{t('common.selectZip')}</p>
             <input ref={fileInputRef} type="file" accept=".zip" onChange={handleFileSelect}
               className="text-sm text-txt-secondary file:mr-3 file:py-1.5 file:px-3 file:rounded-sm file:border file:border-border file:text-sm file:font-medium file:bg-bg-elevated file:text-txt-primary hover:file:bg-border file:cursor-pointer file:transition-colors" />
           </div>
@@ -279,38 +281,38 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
                 {importPreview.excelFound && (
                   <p className="text-xs text-txt-secondary">
                     <Check className="w-3 h-3 text-emerald-400 inline mr-1.5" />
-                    Excel-Datei (data.xlsx)
+                    {t('common.excelFile')}
                   </p>
                 )}
                 {importPreview.docCount > 0 && (
                   <p className="text-xs text-txt-secondary">
                     <Check className="w-3 h-3 text-emerald-400 inline mr-1.5" />
-                    {importPreview.docCount} Dokument{importPreview.docCount !== 1 ? 'e' : ''}
+                    {importPreview.docCount} {importPreview.docCount !== 1 ? t('common.documents') : t('common.document')}
                   </p>
                 )}
               </div>
               <div className="flex items-center gap-2 pt-2 text-xs text-amber-400">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                Vorhandene Daten werden ersetzt.
+                {t('common.existingDataReplaced')}
               </div>
             </div>
           )}
 
           {importError && <p className="text-xs text-red-400">{importError}</p>}
-          {importDone && <p className="text-xs text-emerald-400">Import erfolgreich. Bitte Seite neu laden.</p>}
+          {importDone && <p className="text-xs text-emerald-400">{t('common.importSuccess')}</p>}
 
           <div className="flex items-center gap-3">
             {importPreview && !importDone && (
               <button onClick={handleImport} disabled={importing}
                 className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-50">
                 {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                Importieren
+                {t('common.import')}
               </button>
             )}
             {(importPreview || importDone) && (
               <button onClick={resetImport}
                 className="text-sm text-txt-muted hover:text-txt-primary transition-colors">
-                Zurücksetzen
+                {t('common.reset')}
               </button>
             )}
           </div>

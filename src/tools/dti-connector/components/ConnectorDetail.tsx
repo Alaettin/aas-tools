@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, Network, Table2, FileUp, Box, Settings, Code } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
+import { useLocale } from '@/context/LocaleContext';
 import type { Connector, ConnectorTab } from '../types';
 import { ConnectorSettings } from './ConnectorSettings';
 import { HierarchyEditor } from './HierarchyEditor';
@@ -11,18 +12,18 @@ import { AssetList } from './AssetList';
 import { AssetDetail } from './AssetDetail';
 import { ApiDocs } from './ApiDocs';
 
-const tabs: { id: ConnectorTab; label: string; icon: React.ReactNode }[] = [
-  { id: 'hierarchy', label: 'Hierarchy', icon: <Network className="w-4 h-4" /> },
-  { id: 'model', label: 'Model', icon: <Table2 className="w-4 h-4" /> },
-  { id: 'files', label: 'Files', icon: <FileUp className="w-4 h-4" /> },
-  { id: 'assets', label: 'Assets', icon: <Box className="w-4 h-4" /> },
-  { id: 'api', label: 'API', icon: <Code className="w-4 h-4" /> },
-  { id: 'settings', label: 'Settings', icon: <Settings className="w-4 h-4" /> },
-];
-
 export function ConnectorDetail() {
   const { connectorId } = useParams<{ connectorId: string }>();
   const navigate = useNavigate();
+  const { t } = useLocale();
+  const tabs: { id: ConnectorTab; label: string; icon: React.ReactNode }[] = [
+    { id: 'hierarchy', label: t('connector.tabHierarchy'), icon: <Network className="w-4 h-4" /> },
+    { id: 'model', label: t('connector.tabModel'), icon: <Table2 className="w-4 h-4" /> },
+    { id: 'files', label: t('connector.tabFiles'), icon: <FileUp className="w-4 h-4" /> },
+    { id: 'assets', label: t('connector.tabAssets'), icon: <Box className="w-4 h-4" /> },
+    { id: 'api', label: t('connector.tabApi'), icon: <Code className="w-4 h-4" /> },
+    { id: 'settings', label: t('connector.tabSettings'), icon: <Settings className="w-4 h-4" /> },
+  ];
   const [connector, setConnector] = useState<Connector | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<ConnectorTab>('hierarchy');

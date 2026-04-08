@@ -55,7 +55,7 @@ export function useAssetDetail(connectorId: string, assetId: string) {
         savedRef.current = JSON.stringify(Array.from(map.entries()));
       } catch {
         if (cancelled) return;
-        setError('Verbindung fehlgeschlagen.');
+        setError('common.connectionFailed');
       }
       setLoading(false);
     })();
@@ -95,7 +95,7 @@ export function useAssetDetail(connectorId: string, assetId: string) {
       .eq('asset_id', assetId);
 
     if (delErr) {
-      setError('Speichern fehlgeschlagen.');
+      setError('common.saveFailed');
       setSaving(false);
       return false;
     }
@@ -118,7 +118,7 @@ export function useAssetDetail(connectorId: string, assetId: string) {
             backup.map(b => ({ connector_id: connectorId, asset_id: assetId, ...b }))
           );
         }
-        setError('Speichern fehlgeschlagen.');
+        setError('common.saveFailed');
         setSaving(false);
         return false;
       }

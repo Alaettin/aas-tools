@@ -14,8 +14,17 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import type { Profile, UserRole } from '@/types';
+import { SUPERADMIN_EMAIL } from '@/lib/constants';
 
-function RoleBadge({ role }: { role: UserRole }) {
+function RoleBadge({ role, email }: { role: UserRole; email: string }) {
+  if (email === SUPERADMIN_EMAIL) {
+    return (
+      <span className="inline-flex items-center gap-1 text-2xs font-mono font-medium text-purple-400 bg-purple-400/15 px-2 py-0.5 rounded-sm">
+        <Shield className="w-3 h-3" />
+        SUPERADMIN
+      </span>
+    );
+  }
   if (role === 'admin') {
     return (
       <span className="inline-flex items-center gap-1 text-2xs font-mono font-medium text-accent bg-accent-muted px-2 py-0.5 rounded-sm">
@@ -73,7 +82,7 @@ function UserRow({ user, currentUserId, youLabel, locale }: { user: Profile; cur
         </div>
       </td>
       <td className="px-4 py-3">
-        <RoleBadge role={user.role} />
+        <RoleBadge role={user.role} email={user.email} />
       </td>
       <td className="px-4 py-3">
         <span className="text-sm text-txt-secondary font-mono">{createdDate}</span>

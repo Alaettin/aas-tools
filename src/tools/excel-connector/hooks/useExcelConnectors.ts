@@ -26,11 +26,11 @@ export function useExcelConnectors() {
           supabase.from('excel_connectors').select('*').order('created_at', { ascending: false })
         );
         if (cancelled) return;
-        if (err) setError('Connectors konnten nicht geladen werden.');
+        if (err) setError('common.loadFailed');
         else setConnectors((data || []) as ExcelConnector[]);
       } catch {
         if (cancelled) return;
-        setError('Verbindung fehlgeschlagen.');
+        setError('common.connectionFailed');
       }
       setLoading(false);
     })();
@@ -47,7 +47,7 @@ export function useExcelConnectors() {
       .single();
 
     if (err || !mountedRef.current) {
-      if (mountedRef.current) setError('Connector konnte nicht erstellt werden.');
+      if (mountedRef.current) setError('common.saveFailed');
       return null;
     }
     const connector = data as ExcelConnector;
@@ -85,7 +85,7 @@ export function useExcelConnectors() {
       .eq('connector_id', connectorId);
 
     if (err || !mountedRef.current) {
-      if (mountedRef.current) setError('Connector konnte nicht gelöscht werden.');
+      if (mountedRef.current) setError('common.deleteFailed');
       return false;
     }
     setConnectors(prev => prev.filter(c => c.connector_id !== connectorId));
@@ -99,7 +99,7 @@ export function useExcelConnectors() {
       .eq('connector_id', connectorId);
 
     if (err || !mountedRef.current) {
-      if (mountedRef.current) setError('Umbenennen fehlgeschlagen.');
+      if (mountedRef.current) setError('common.renameFailed');
       return false;
     }
     setConnectors(prev => prev.map(c => c.connector_id === connectorId ? { ...c, name: name.trim() } : c));

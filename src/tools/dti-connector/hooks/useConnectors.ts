@@ -32,13 +32,13 @@ export function useConnectors() {
         if (cancelled) return;
 
         if (result.error) {
-          setError('Connectors konnten nicht geladen werden.');
+          setError('common.loadFailed');
         } else {
           setConnectors(result.data as Connector[]);
         }
       } catch {
         if (cancelled) return;
-        setError('Verbindung fehlgeschlagen. Bitte Seite neu laden.');
+        setError('dti.connectionReload');
       }
       setLoading(false);
     })();
@@ -56,7 +56,7 @@ export function useConnectors() {
       .single();
 
     if (err || !mountedRef.current) {
-      if (mountedRef.current) setError('Connector konnte nicht erstellt werden.');
+      if (mountedRef.current) setError('common.saveFailed');
       return null;
     }
 
@@ -72,7 +72,7 @@ export function useConnectors() {
       .eq('connector_id', connectorId);
 
     if (err || !mountedRef.current) {
-      if (mountedRef.current) setError('Connector konnte nicht umbenannt werden.');
+      if (mountedRef.current) setError('common.renameFailed');
       return false;
     }
 
@@ -89,7 +89,7 @@ export function useConnectors() {
       .eq('connector_id', connectorId);
 
     if (err || !mountedRef.current) {
-      if (mountedRef.current) setError('Connector konnte nicht gelöscht werden.');
+      if (mountedRef.current) setError('common.deleteFailed');
       return false;
     }
 

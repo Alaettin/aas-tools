@@ -3,7 +3,9 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Loader2, Save, CheckCircle, Shield, User, BookOpen } from 'lucide-react';
 import { useUserDetail } from '@/hooks/useUserDetail';
 import { useLocale } from '@/context/LocaleContext';
+import { useAuth } from '@/context/AuthContext';
 import { tools } from '@/tools/registry';
+import { SUPERADMIN_EMAIL } from '@/lib/constants';
 
 const toolList = tools.filter(t => t.category === 'tool');
 const connectorList = tools.filter(t => t.category === 'connector');
@@ -26,6 +28,7 @@ export function UserDetailPage() {
 function UserDetailContent({ userId }: { userId: string }) {
   const navigate = useNavigate();
   const { t, locale } = useLocale();
+  const { isSuperAdmin: currentUserIsSuperAdmin } = useAuth();
   const {
     profile, role, setRole, toolAccess, toggleTool, docAccess, toggleDoc,
     loading, saving, saved, error, save,
@@ -62,6 +65,8 @@ function UserDetailContent({ userId }: { userId: string }) {
   }
 
   const isAdmin = role === 'admin';
+  const targetIsSuperAdmin = profile.email === SUPERADMIN_EMAIL;
+  const isProtected = targetIsSuperAdmin && !currentUserIsSuperAdmin;
   const memberSince = new Date(profile.created_at).toLocaleDateString(locale === 'de' ? 'de-DE' : 'en-US', {
     day: '2-digit',
     month: 'long',
@@ -92,9 +97,17 @@ function UserDetailContent({ userId }: { userId: string }) {
           <span className="text-sm font-mono font-bold text-accent">{initials}</span>
         </div>
         <div>
-          <h1 className="font-mono text-xl font-bold">
-            {profile.display_name || profile.email}
-          </h1>
+          <div className="flex items-center gap-3">
+            <h1 className="font-mono text-xl font-bold">
+              {profile.display_name || profile.email}
+            </h1>
+            {targetIsSuperAdmin && (
+              <span className="inline-flex items-center gap-1 text-2xs font-mono font-medium text-purple-400 bg-purple-400/15 px-2 py-0.5 rounded-sm">
+                <Shield className="w-3 h-3" />
+                SUPERADMIN
+              </span>
+            )}
+          </div>
           <p className="text-sm text-txt-muted">
             {profile.email} — {t('userDetail.memberSince', { date: memberSince })}
           </p>
@@ -121,7 +134,8 @@ function UserDetailContent({ userId }: { userId: string }) {
           <select
             value={role}
             onChange={e => setRole(e.target.value as UserRole)}
-            className="bg-bg-input border border-border rounded-sm px-3 py-2.5 text-sm text-txt-primary focus:border-accent focus:ring-1 focus:ring-accent/30"
+            disabled={isProtected}
+            className="bg-bg-input border border-border rounded-sm px-3 py-2.5 text-sm text-txt-primary focus:border-accent focus:ring-1 focus:ring-accent/30 disabled:opacity-50"
           >
             <option value="admin">{t('userDetail.roleAdmin')}</option>
             <option value="user">{t('userDetail.roleUser')}</option>
@@ -151,7 +165,7 @@ function UserDetailContent({ userId }: { userId: string }) {
                 <input
                   type="checkbox"
                   checked={isAdmin || toolAccess.has(tool.id)}
-                  disabled={isAdmin}
+                  disabled={isAdmin || isProtected}
                   onChange={() => toggleTool(tool.id)}
                   className="accent-accent w-4 h-4"
                 />
@@ -189,7 +203,7 @@ function UserDetailContent({ userId }: { userId: string }) {
                 <input
                   type="checkbox"
                   checked={isAdmin || toolAccess.has(tool.id)}
-                  disabled={isAdmin}
+                  disabled={isAdmin || isProtected}
                   onChange={() => toggleTool(tool.id)}
                   className="accent-accent w-4 h-4"
                 />
@@ -230,7 +244,7 @@ function UserDetailContent({ userId }: { userId: string }) {
                 <input
                   type="checkbox"
                   checked={isAdmin || docAccess.has(manual.id)}
-                  disabled={isAdmin}
+                  disabled={isAdmin || isProtected}
                   onChange={() => toggleDoc(manual.id)}
                   className="accent-accent w-4 h-4"
                 />
@@ -254,7 +268,7 @@ function UserDetailContent({ userId }: { userId: string }) {
       {/* Save */}
       <button
         onClick={() => save()}
-        disabled={saving}
+        disabled={saving || isProtected}
         className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2.5 rounded-sm transition-colors disabled:opacity-50"
       >
         {saving ? (

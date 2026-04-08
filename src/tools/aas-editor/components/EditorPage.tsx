@@ -19,6 +19,7 @@ import { ConceptDescriptionNode } from './canvas/nodes/ConceptDescriptionNode';
 import { Toolbar } from './canvas/Toolbar';
 import { ContextMenu } from './canvas/ContextMenu';
 import { DetailPanel } from './panels/DetailPanel';
+import { useLocale } from '@/context/LocaleContext';
 
 interface EditorPageProps {
   projectId: string;
@@ -78,6 +79,7 @@ function clearSemanticIdsForCdEdges(removedEdges: Edge[]) {
 }
 
 export function EditorPage({ projectId, onBack }: EditorPageProps) {
+  const { t } = useLocale();
   const [projectName, setProjectName] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -241,7 +243,7 @@ export function EditorPage({ projectId, onBack }: EditorPageProps) {
           className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-50"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : saved ? <CheckCircle className="w-4 h-4" /> : <Save className="w-4 h-4" />}
-          {saved ? 'Gespeichert' : 'Speichern'}
+          {saved ? t('common.saved') : t('common.save')}
         </button>
       </div>
 

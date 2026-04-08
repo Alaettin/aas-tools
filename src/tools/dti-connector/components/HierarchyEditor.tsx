@@ -2,12 +2,14 @@ import { useRef } from 'react';
 import { GripVertical, Plus, X, Save, Loader2 } from 'lucide-react';
 import { useHierarchy } from '../hooks/useHierarchy';
 import { validateHierarchyName } from '../lib/validation';
+import { useLocale } from '@/context/LocaleContext';
 
 interface HierarchyEditorProps {
   connectorId: string;
 }
 
 export function HierarchyEditor({ connectorId }: HierarchyEditorProps) {
+  const { t } = useLocale();
   const {
     levels, loading, saving, error, hasChanges,
     addLevel, removeLevel, updateName, reorder, save,
@@ -61,7 +63,7 @@ export function HierarchyEditor({ connectorId }: HierarchyEditorProps) {
           className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-40"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Speichern
+          {t('common.save')}
         </button>
       </div>
 

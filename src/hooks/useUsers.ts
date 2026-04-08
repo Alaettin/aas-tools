@@ -25,7 +25,7 @@ export function useUsers() {
       }
     } catch {
       if (!mountedRef.current) return;
-      setError('Verbindung fehlgeschlagen.');
+      setError('common.connectionFailed');
     }
     setLoading(false);
   }, []);

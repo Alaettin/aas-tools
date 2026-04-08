@@ -109,7 +109,7 @@ export function useUserDetail(userId: string) {
             backup.map(b => ({ user_id: userId, tool_id: b.tool_id }))
           );
           if (rollbackErr) {
-            setError('Speichern und Wiederherstellung fehlgeschlagen. Bitte Seite neu laden.');
+            setError('dti.saveRollbackFailed');
             setSaving(false);
             return false;
           }

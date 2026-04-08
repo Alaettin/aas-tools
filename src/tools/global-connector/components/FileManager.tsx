@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { Trash2, Loader2, ExternalLink, Upload, FileText, Image, Copy, Check } from 'lucide-react';
 import { useDocuments } from '../hooks/useDocuments';
+import { useLocale } from '@/context/LocaleContext';
 
 interface FileManagerProps {
   userId: string;
@@ -18,6 +19,7 @@ function isImage(name: string): boolean {
 }
 
 export function FileManager({ userId, connectorId }: FileManagerProps) {
+  const { t } = useLocale();
   const { documents, loading, error, uploadFile, deleteFile, getFileUrl } = useDocuments(userId, connectorId);
   const [uploading, setUploading] = useState(false);
   const [dragOver, setDragOver] = useState(false);
@@ -58,7 +60,7 @@ export function FileManager({ userId, connectorId }: FileManagerProps) {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h2 className="font-mono text-lg font-semibold">Documents</h2>
-          <p className="text-xs text-txt-muted mt-0.5">{documents.length} {documents.length === 1 ? 'Datei' : 'Dateien'}</p>
+          <p className="text-xs text-txt-muted mt-0.5">{documents.length} {documents.length === 1 ? t('common.file') : t('common.files')}</p>
         </div>
       </div>
 
@@ -77,7 +79,7 @@ export function FileManager({ userId, connectorId }: FileManagerProps) {
       >
         <Upload className="w-6 h-6 text-txt-muted mx-auto mb-2" />
         <p className="text-sm text-txt-secondary">
-          {uploading ? 'Hochladen…' : 'Dateien hierher ziehen oder klicken'}
+          {uploading ? t('common.uploading') : t('common.dropOrClick')}
         </p>
       </div>
       <input ref={fileInputRef} type="file" multiple className="hidden"
@@ -103,18 +105,18 @@ export function FileManager({ userId, connectorId }: FileManagerProps) {
                   setTimeout(() => setCopiedName(null), 2000);
                 }}
                 className="p-1 text-txt-muted hover:text-accent opacity-0 group-hover:opacity-100 transition-all"
-                title="Name kopieren">
+                title={t('common.copy')}>
                 {copiedName === doc.name ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Copy className="w-3.5 h-3.5" />}
               </button>
               <span className="text-2xs text-txt-muted flex-shrink-0">{formatSize(doc.size)}</span>
               <button onClick={() => handleFileClick(doc.storagePath)}
                 className="p-1 text-txt-muted hover:text-accent opacity-0 group-hover:opacity-100 transition-all"
-                title="Öffnen">
+                title={t('common.open')}>
                 <ExternalLink className="w-3.5 h-3.5" />
               </button>
               <button onClick={() => deleteFile(doc.name)}
                 className="p-1 text-txt-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                title="Löschen">
+                title={t('common.delete')}>
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>

@@ -38,7 +38,7 @@ export function useModel(connectorId: string) {
         }
       } catch {
         if (cancelled) return;
-        setError('Verbindung fehlgeschlagen.');
+        setError('common.connectionFailed');
       }
       setLoading(false);
     })();
@@ -74,7 +74,7 @@ export function useModel(connectorId: string) {
       .eq('connector_id', connectorId);
 
     if (delErr) {
-      setError('Speichern fehlgeschlagen.');
+      setError('common.saveFailed');
       setSaving(false);
       return false;
     }
@@ -98,7 +98,7 @@ export function useModel(connectorId: string) {
             backup.map(b => ({ connector_id: connectorId, ...b }))
           );
         }
-        setError('Speichern fehlgeschlagen.');
+        setError('common.saveFailed');
         setSaving(false);
         return false;
       }

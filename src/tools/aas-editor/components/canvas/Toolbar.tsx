@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { Box, BookOpen, Plus, Download, Upload } from 'lucide-react';
 import { useAasStore } from '../../store/aasStore';
 import { downloadJson } from '../../lib/export';
+import { useLocale } from '@/context/LocaleContext';
 
 interface ToolbarProps {
   onAddShell: () => void;
@@ -10,6 +11,7 @@ interface ToolbarProps {
 }
 
 export function Toolbar({ onAddShell, onAddSubmodel, onAddConceptDescription }: ToolbarProps) {
+  const { t } = useLocale();
   const fileRef = useRef<HTMLInputElement>(null);
   const store = useAasStore();
 
@@ -35,14 +37,14 @@ export function Toolbar({ onAddShell, onAddSubmodel, onAddConceptDescription }: 
 
   return (
     <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 flex items-center gap-1 bg-bg-surface/90 backdrop-blur-sm border border-border rounded-sm px-2 py-1.5">
-      <button onClick={onAddShell} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-blue-400 hover:bg-blue-400/10 rounded-sm transition-colors" title="Neue AAS">
+      <button onClick={onAddShell} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-blue-400 hover:bg-blue-400/10 rounded-sm transition-colors" title={t('aasEditor.newAas')}>
         <Box className="w-3.5 h-3.5" /> AAS
       </button>
-      <button onClick={onAddSubmodel} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-purple-400 hover:bg-purple-400/10 rounded-sm transition-colors" title="Neues Submodel">
+      <button onClick={onAddSubmodel} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-purple-400 hover:bg-purple-400/10 rounded-sm transition-colors" title={t('aasEditor.newSubmodel')}>
         <Plus className="w-3.5 h-3.5" /> Submodel
       </button>
       <div className="w-px h-5 bg-border mx-1" />
-      <button onClick={onAddConceptDescription} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-orange-400 hover:bg-orange-400/10 rounded-sm transition-colors" title="Neue CD">
+      <button onClick={onAddConceptDescription} className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-orange-400 hover:bg-orange-400/10 rounded-sm transition-colors" title={t('aasEditor.newCd')}>
         <BookOpen className="w-3.5 h-3.5" /> CD
       </button>
       <div className="w-px h-5 bg-border mx-1" />

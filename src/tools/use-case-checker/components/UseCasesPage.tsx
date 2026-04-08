@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Plus, Loader2, CheckSquare, Pencil, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, CheckSquare, Pencil, Trash2, X } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext';
 import { useUseCases } from '../hooks/useUseCases';
 import type { UseCase } from '../types';
@@ -9,10 +9,10 @@ interface SubmodelRow {
   id_short: string;
 }
 
-function UseCaseDialog({ editing, onSave, onClose }: {
+function UseCaseForm({ editing, onSave, onBack }: {
   editing: UseCase | null;
   onSave: (name: string, description: string, submodels: SubmodelRow[]) => Promise<void>;
-  onClose: () => void;
+  onBack: () => void;
 }) {
   const { t } = useLocale();
   const [name, setName] = useState(editing?.name || '');
@@ -37,86 +37,80 @@ function UseCaseDialog({ editing, onSave, onClose }: {
   };
 
   return (
-    <div className="fixed inset-0 bg-bg-primary/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-bg-surface border border-border rounded w-full max-w-xl max-h-[85vh] flex flex-col">
-        <div className="px-5 py-4 border-b border-border flex-shrink-0">
-          <h3 className="font-mono text-sm font-semibold">
-            {editing ? t('ucc.editUseCase') : t('ucc.newUseCase')}
-          </h3>
+    <div className="animate-fade-in">
+      <div className="flex items-center gap-4 mb-6">
+        <button onClick={onBack} className="flex items-center gap-2 text-xs text-txt-muted hover:text-accent transition-colors font-mono">
+          <ArrowLeft className="w-3 h-3" />
+          {t('ucc.tabUseCases')}
+        </button>
+        <div className="h-4 w-px bg-border" />
+        <h3 className="font-mono text-sm font-semibold">
+          {editing ? t('ucc.editUseCase') : t('ucc.newUseCase')}
+        </h3>
+      </div>
+
+      <div className="bg-bg-surface border border-border rounded p-5 space-y-4">
+        <div>
+          <label className="block text-2xs text-txt-muted mb-1">Name</label>
+          <input
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="z.B. Digital Nameplate"
+            className="w-full bg-bg-input border border-border rounded-sm px-3 py-2 text-sm text-txt-primary focus:border-accent focus:ring-1 focus:ring-accent/30"
+            autoFocus
+          />
+        </div>
+        <div>
+          <label className="block text-2xs text-txt-muted mb-1">{t('ucc.description')}</label>
+          <input
+            type="text"
+            value={description}
+            onChange={e => setDescription(e.target.value)}
+            placeholder="Optional"
+            className="w-full bg-bg-input border border-border rounded-sm px-3 py-2 text-sm text-txt-primary focus:border-accent focus:ring-1 focus:ring-accent/30"
+          />
         </div>
 
-        <div className="flex-1 overflow-y-auto px-5 py-4 space-y-4">
-          <div>
-            <label className="block text-2xs text-txt-muted mb-1">Name</label>
-            <input
-              type="text"
-              value={name}
-              onChange={e => setName(e.target.value)}
-              placeholder="z.B. Digital Nameplate"
-              className="w-full bg-bg-input border border-border rounded-sm px-3 py-2 text-sm text-txt-primary focus:border-accent focus:ring-1 focus:ring-accent/30"
-              autoFocus
-            />
+        {/* Submodels */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="text-2xs text-txt-muted">{t('ucc.requiredSubmodels')}</label>
+            <button onClick={addRow} className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors">
+              <Plus className="w-3.5 h-3.5" />
+              {t('ucc.add')}
+            </button>
           </div>
-          <div>
-            <label className="block text-2xs text-txt-muted mb-1">Beschreibung</label>
-            <input
-              type="text"
-              value={description}
-              onChange={e => setDescription(e.target.value)}
-              placeholder="Optional"
-              className="w-full bg-bg-input border border-border rounded-sm px-3 py-2 text-sm text-txt-primary focus:border-accent focus:ring-1 focus:ring-accent/30"
-            />
-          </div>
-
-          {/* Submodels */}
-          <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-2xs text-txt-muted">{t('ucc.requiredSubmodels')}</label>
-              <button
-                onClick={addRow}
-                className="flex items-center gap-1 text-xs text-accent hover:text-accent-hover transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                {t('ucc.add')}
-              </button>
+          {submodels.length === 0 ? (
+            <p className="text-xs text-txt-muted py-2">{t('ucc.noSubmodelsDefined')}</p>
+          ) : (
+            <div className="space-y-2">
+              {submodels.map((row, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={row.semantic_id}
+                    onChange={e => updateRow(i, 'semantic_id', e.target.value)}
+                    placeholder="Semantic ID (urn:...)"
+                    className="flex-1 bg-bg-input border border-border rounded-sm px-2.5 py-1.5 text-xs font-mono text-txt-primary focus:border-accent focus:ring-1 focus:ring-accent/30"
+                  />
+                  <input
+                    type="text"
+                    value={row.id_short}
+                    onChange={e => updateRow(i, 'id_short', e.target.value)}
+                    placeholder="idShort"
+                    className="w-32 bg-bg-input border border-border rounded-sm px-2.5 py-1.5 text-xs text-txt-primary focus:border-accent focus:ring-1 focus:ring-accent/30"
+                  />
+                  <button onClick={() => removeRow(i)} className="text-txt-muted hover:text-red-400 transition-colors p-1">
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
             </div>
-            {submodels.length === 0 ? (
-              <p className="text-xs text-txt-muted py-2">{t('ucc.noSubmodelsDefined')}</p>
-            ) : (
-              <div className="space-y-2">
-                {submodels.map((row, i) => (
-                  <div key={i} className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={row.semantic_id}
-                      onChange={e => updateRow(i, 'semantic_id', e.target.value)}
-                      placeholder="Semantic ID (urn:...)"
-                      className="flex-1 bg-bg-input border border-border rounded-sm px-2.5 py-1.5 text-xs font-mono text-txt-primary focus:border-accent focus:ring-1 focus:ring-accent/30"
-                    />
-                    <input
-                      type="text"
-                      value={row.id_short}
-                      onChange={e => updateRow(i, 'id_short', e.target.value)}
-                      placeholder="idShort"
-                      className="w-32 bg-bg-input border border-border rounded-sm px-2.5 py-1.5 text-xs text-txt-primary focus:border-accent focus:ring-1 focus:ring-accent/30"
-                    />
-                    <button
-                      onClick={() => removeRow(i)}
-                      className="text-txt-muted hover:text-red-400 transition-colors p-1"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
+          )}
         </div>
 
-        <div className="px-5 py-3 border-t border-border flex justify-end gap-2 flex-shrink-0">
-          <button onClick={onClose} className="px-4 py-2 text-sm text-txt-muted hover:text-txt-primary transition-colors">
-            {t('ucc.cancel')}
-          </button>
+        <div className="flex gap-2 pt-2">
           <button
             onClick={handleSave}
             disabled={!name.trim() || saving}
@@ -124,6 +118,9 @@ function UseCaseDialog({ editing, onSave, onClose }: {
           >
             {saving && <Loader2 className="w-4 h-4 animate-spin" />}
             {editing ? t('ucc.save') : t('ucc.create')}
+          </button>
+          <button onClick={onBack} className="px-4 py-2 text-sm text-txt-muted hover:text-txt-primary transition-colors">
+            {t('ucc.cancel')}
           </button>
         </div>
       </div>
@@ -134,12 +131,13 @@ function UseCaseDialog({ editing, onSave, onClose }: {
 export function UseCasesPage() {
   const { t } = useLocale();
   const { useCases, loading, error, createUseCase, updateUseCase, deleteUseCase } = useUseCases();
-  const [showDialog, setShowDialog] = useState(false);
+  const [view, setView] = useState<'list' | 'form'>('list');
   const [editing, setEditing] = useState<UseCase | null>(null);
   const [deleting, setDeleting] = useState<string | null>(null);
 
-  const openCreate = () => { setEditing(null); setShowDialog(true); };
-  const openEdit = (uc: UseCase) => { setEditing(uc); setShowDialog(true); };
+  const openCreate = () => { setEditing(null); setView('form'); };
+  const openEdit = (uc: UseCase) => { setEditing(uc); setView('form'); };
+  const backToList = () => setView('list');
 
   const handleSave = async (name: string, description: string, submodels: SubmodelRow[]) => {
     if (editing) {
@@ -147,7 +145,7 @@ export function UseCasesPage() {
     } else {
       await createUseCase(name, description, submodels);
     }
-    setShowDialog(false);
+    setView('list');
   };
 
   const handleDelete = async (caseId: string) => {
@@ -155,6 +153,10 @@ export function UseCasesPage() {
     await deleteUseCase(caseId);
     setDeleting(null);
   };
+
+  if (view === 'form') {
+    return <UseCaseForm editing={editing} onSave={handleSave} onBack={backToList} />;
+  }
 
   if (loading) {
     return (
@@ -178,9 +180,7 @@ export function UseCasesPage() {
       </div>
 
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-sm px-3 py-2 text-sm text-red-400 mb-4">
-          {error}
-        </div>
+        <div className="bg-red-500/10 border border-red-500/20 rounded-sm px-3 py-2 text-sm text-red-400 mb-4">{error}</div>
       )}
 
       {useCases.length === 0 ? (
@@ -217,35 +217,17 @@ export function UseCasesPage() {
                 </div>
               )}
               <div className="flex items-center gap-1">
-                <button
-                  onClick={() => openEdit(uc)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-txt-muted hover:text-txt-primary hover:bg-bg-elevated rounded-sm transition-colors"
-                >
+                <button onClick={() => openEdit(uc)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-txt-muted hover:text-txt-primary hover:bg-bg-elevated rounded-sm transition-colors">
                   <Pencil className="w-3.5 h-3.5" />
                   {t('ucc.edit')}
                 </button>
-                <button
-                  onClick={() => handleDelete(uc.case_id)}
-                  className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-txt-muted hover:text-red-400 hover:bg-bg-elevated rounded-sm transition-colors"
-                >
-                  {deleting === uc.case_id ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Trash2 className="w-3.5 h-3.5" />
-                  )}
+                <button onClick={() => handleDelete(uc.case_id)} className="flex items-center gap-1 px-2.5 py-1.5 text-xs text-txt-muted hover:text-red-400 hover:bg-bg-elevated rounded-sm transition-colors">
+                  {deleting === uc.case_id ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Trash2 className="w-3.5 h-3.5" />}
                 </button>
               </div>
             </div>
           ))}
         </div>
-      )}
-
-      {showDialog && (
-        <UseCaseDialog
-          editing={editing}
-          onSave={handleSave}
-          onClose={() => setShowDialog(false)}
-        />
       )}
     </div>
   );

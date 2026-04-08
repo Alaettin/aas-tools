@@ -9,6 +9,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import type { Session, User } from '@supabase/supabase-js';
 import type { Profile } from '@/types';
+import { SUPERADMIN_EMAIL } from '@/lib/constants';
 
 interface AuthState {
   session: Session | null;
@@ -16,6 +17,7 @@ interface AuthState {
   profile: Profile | null;
   isLoading: boolean;
   isAdmin: boolean;
+  isSuperAdmin: boolean;
   toolAccess: string[];
   docAccess: string[];
 }
@@ -89,6 +91,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         profile: cached.profile,
         isLoading: false, // No spinner — show cached data
         isAdmin: cached.profile.role === 'admin',
+        isSuperAdmin: cached.profile.email === SUPERADMIN_EMAIL,
         toolAccess: cached.toolAccess,
         docAccess: cached.docAccess || [],
       };
@@ -99,6 +102,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       profile: null,
       isLoading: true,
       isAdmin: false,
+      isSuperAdmin: false,
       toolAccess: [],
       docAccess: [],
     };
@@ -126,6 +130,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           profile,
           isLoading: false,
           isAdmin: profile?.role === 'admin',
+          isSuperAdmin: profile?.email === SUPERADMIN_EMAIL,
           toolAccess,
           docAccess,
         });
@@ -160,6 +165,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             profile,
             isLoading: false,
             isAdmin: profile?.role === 'admin',
+            isSuperAdmin: profile?.email === SUPERADMIN_EMAIL,
             toolAccess,
             docAccess,
           });
@@ -171,6 +177,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             profile: null,
             isLoading: false,
             isAdmin: false,
+            isSuperAdmin: false,
             toolAccess: [],
             docAccess: [],
           });
@@ -203,6 +210,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...prev,
         profile,
         isAdmin: profile.role === 'admin',
+        isSuperAdmin: profile.email === SUPERADMIN_EMAIL,
         toolAccess,
         docAccess,
       }));

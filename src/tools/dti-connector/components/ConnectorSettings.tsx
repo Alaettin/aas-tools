@@ -3,6 +3,7 @@ import { Copy, RefreshCw, Check, Key } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { Connector } from '../types';
 import { ImportExport } from './ImportExport';
+import { useLocale } from '@/context/LocaleContext';
 
 interface ConnectorSettingsProps {
   connector: Connector;
@@ -10,6 +11,7 @@ interface ConnectorSettingsProps {
 }
 
 export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSettingsProps) {
+  const { t } = useLocale();
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
@@ -64,13 +66,13 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
               <button
                 onClick={handleCopy}
                 className="flex items-center gap-2 px-3 py-2.5 text-sm font-medium bg-bg-elevated hover:bg-border border border-border rounded-sm transition-colors"
-                title="Kopieren"
+                title={t('common.copy')}
               >
                 {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-txt-secondary" />}
               </button>
             </div>
             <p className="text-2xs text-txt-muted mt-1.5">
-              Verwende diesen Key für den Zugriff auf die External API.
+              {t('apiKey.hint')}
             </p>
           </div>
 
@@ -81,12 +83,12 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
               className="flex items-center gap-2 text-sm text-txt-secondary hover:text-txt-primary transition-colors"
             >
               <RefreshCw className="w-3.5 h-3.5" />
-              Neuen Key generieren
+              {t('apiKey.generate')}
             </button>
           ) : (
             <div className="bg-red-500/5 border border-red-500/20 rounded-sm p-3">
               <p className="text-xs text-red-400 mb-3">
-                Der alte Key wird sofort ungültig. Alle Integrationen müssen aktualisiert werden.
+                {t('dti.apiKeyWarning')}
               </p>
               <div className="flex items-center gap-2">
                 <button
@@ -94,13 +96,13 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
                   disabled={regenerating}
                   className="text-xs font-medium text-red-400 bg-red-400/10 hover:bg-red-400/20 border border-red-400/20 rounded-sm px-3 py-1.5 transition-colors disabled:opacity-50"
                 >
-                  {regenerating ? 'Generiere…' : 'Key erneuern'}
+                  {regenerating ? t('apiKey.regenerating') : t('apiKey.regenerate')}
                 </button>
                 <button
                   onClick={() => setConfirmRegenerate(false)}
                   className="text-xs text-txt-muted hover:text-txt-primary transition-colors px-3 py-1.5"
                 >
-                  Abbrechen
+                  {t('common.cancel')}
                 </button>
               </div>
             </div>

@@ -4,6 +4,7 @@ import { exportConnector, triggerDownload, type ExportCategory } from '../lib/ex
 import { parseImportFile, importConnector, type ImportPreview } from '../lib/import';
 import type { Connector } from '../types';
 import type JSZip from 'jszip';
+import { useLocale } from '@/context/LocaleContext';
 
 interface ImportExportProps {
   connector: Connector;
@@ -12,11 +13,12 @@ interface ImportExportProps {
 const CATEGORIES: { id: ExportCategory; label: string }[] = [
   { id: 'hierarchy', label: 'Hierarchy' },
   { id: 'model', label: 'Model' },
-  { id: 'fileEntries', label: 'File-Einträge + Dateien' },
+  { id: 'fileEntries', label: 'fileEntries' },
   { id: 'assets', label: 'Assets' },
 ];
 
 export function ImportExport({ connector }: ImportExportProps) {
+  const { t } = useLocale();
   // Export state
   const [exportCategories, setExportCategories] = useState<Set<ExportCategory>>(
     new Set(['hierarchy', 'model', 'fileEntries', 'assets'])
@@ -56,7 +58,7 @@ export function ImportExport({ connector }: ImportExportProps) {
       const date = new Date().toISOString().slice(0, 10);
       triggerDownload(blob, `${connector.name.replace(/\s+/g, '_')}_export_${date}.zip`);
     } catch (e) {
-      setExportError(e instanceof Error ? e.message : 'Export fehlgeschlagen.');
+      setExportError(e instanceof Error ? e.message : t('common.exportFailed'));
     }
     setExporting(false);
   };
@@ -75,7 +77,7 @@ export function ImportExport({ connector }: ImportExportProps) {
       setImportPreview(result.preview);
       setImportData({ data: result.data, zip: result.zip });
     } catch (err) {
-      setImportError(err instanceof Error ? err.message : 'Datei konnte nicht gelesen werden.');
+      setImportError(err instanceof Error ? err.message : t('common.fileReadFailed'));
     }
   };
 
@@ -97,7 +99,7 @@ export function ImportExport({ connector }: ImportExportProps) {
       setImportData(null);
       if (fileInputRef.current) fileInputRef.current.value = '';
     } else {
-      setImportError(result.error || 'Import fehlgeschlagen.');
+      setImportError(result.error || t('common.importFailed'));
     }
     setImporting(false);
   };
@@ -133,7 +135,7 @@ export function ImportExport({ connector }: ImportExportProps) {
                   onChange={() => toggleCategory(cat.id)}
                   className="accent-accent w-4 h-4"
                 />
-                <span className="text-sm text-txt-primary">{cat.label}</span>
+                <span className="text-sm text-txt-primary">{cat.id === 'fileEntries' ? t('dti.fileEntries') : cat.label}</span>
               </label>
             ))}
           </div>
@@ -148,7 +150,7 @@ export function ImportExport({ connector }: ImportExportProps) {
             className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-40"
           >
             {exporting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
-            Exportieren
+            {t('common.export')}
           </button>
         </div>
       </div>
@@ -165,7 +167,7 @@ export function ImportExport({ connector }: ImportExportProps) {
         </div>
         <div className="p-5 space-y-4">
           <div>
-            <p className="text-xs text-txt-muted mb-2">ZIP-Datei auswählen:</p>
+            <p className="text-xs text-txt-muted mb-2">{t('common.selectZip')}</p>
             <input
               ref={fileInputRef}
               type="file"
@@ -213,7 +215,7 @@ export function ImportExport({ connector }: ImportExportProps) {
 
               <div className="flex items-center gap-2 pt-2 text-xs text-amber-400">
                 <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" />
-                Vorhandene Daten werden ersetzt.
+                {t('common.existingDataReplaced')}
               </div>
             </div>
           )}
@@ -223,7 +225,7 @@ export function ImportExport({ connector }: ImportExportProps) {
           )}
 
           {importDone && (
-            <p className="text-xs text-emerald-400">Import erfolgreich. Bitte Seite neu laden.</p>
+            <p className="text-xs text-emerald-400">{t('common.importSuccess')}</p>
           )}
 
           <div className="flex items-center gap-3">
@@ -234,7 +236,7 @@ export function ImportExport({ connector }: ImportExportProps) {
                 className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-50"
               >
                 {importing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                Importieren
+                {t('common.import')}
               </button>
             )}
             {(importPreview || importDone) && (
@@ -242,7 +244,7 @@ export function ImportExport({ connector }: ImportExportProps) {
                 onClick={resetImport}
                 className="text-sm text-txt-muted hover:text-txt-primary transition-colors"
               >
-                Zurücksetzen
+                {t('common.reset')}
               </button>
             )}
           </div>

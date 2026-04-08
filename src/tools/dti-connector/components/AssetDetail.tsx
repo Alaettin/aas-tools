@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { ArrowLeft, Save, Loader2, Search } from 'lucide-react';
 import { useAssetDetail } from '../hooks/useAssetDetail';
+import { useLocale } from '@/context/LocaleContext';
 
 interface AssetDetailProps {
   connectorId: string;
@@ -9,6 +10,7 @@ interface AssetDetailProps {
 }
 
 export function AssetDetail({ connectorId, assetId, onBack }: AssetDetailProps) {
+  const { t } = useLocale();
   const {
     hierarchyLevels, propertyDps, fileDps, fileEntryIds,
     loading, saving, error, hasChanges,
@@ -51,7 +53,7 @@ export function AssetDetail({ connectorId, assetId, onBack }: AssetDetailProps) 
           className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-40"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-          Speichern
+          {t('common.save')}
         </button>
       </div>
 

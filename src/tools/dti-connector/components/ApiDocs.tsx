@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronRight, Copy, Check, Play, Loader2 } from 'lucide-react';
+import { useLocale } from '@/context/LocaleContext';
 
 interface ApiDocsProps {
   apiKey: string;
@@ -143,6 +144,7 @@ const endpoints: Endpoint[] = [
 ];
 
 function EndpointCard({ endpoint, baseUrl }: { endpoint: Endpoint; baseUrl: string }) {
+  const { t } = useLocale();
   const [open, setOpen] = useState(false);
   const [paramValues, setParamValues] = useState<Record<string, string>>({});
   const [body, setBody] = useState(endpoint.requestBody || '');
@@ -205,7 +207,7 @@ function EndpointCard({ endpoint, baseUrl }: { endpoint: Endpoint; baseUrl: stri
           {/* Path Params */}
           {endpoint.pathParams && (
             <div className="space-y-2">
-              <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider">URL Parameters</p>
+              <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider">{t('api.urlParams')}</p>
               {endpoint.pathParams.map(p => (
                 <div key={p.name} className="flex items-center gap-3">
                   <span className="text-xs font-mono text-txt-secondary w-20">{p.name}</span>
@@ -224,7 +226,7 @@ function EndpointCard({ endpoint, baseUrl }: { endpoint: Endpoint; baseUrl: stri
           {/* Request Body */}
           {endpoint.requestBody && (
             <div>
-              <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider mb-1">Request Body</p>
+              <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider mb-1">{t('api.requestBody')}</p>
               <textarea
                 value={body}
                 onChange={e => setBody(e.target.value)}
@@ -239,7 +241,7 @@ function EndpointCard({ endpoint, baseUrl }: { endpoint: Endpoint; baseUrl: stri
             <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider mb-1">
               <span className="inline-flex items-center gap-1.5">
                 <span className="text-emerald-400 bg-emerald-400/10 border border-emerald-400/20 rounded px-1.5 py-0.5 text-2xs font-mono">200</span>
-                Response
+                {t('api.response')}
               </span>
             </p>
             <pre className="bg-bg-input border border-border rounded-sm px-3 py-2 text-xs font-mono text-txt-secondary overflow-x-auto">
@@ -253,7 +255,7 @@ function EndpointCard({ endpoint, baseUrl }: { endpoint: Endpoint; baseUrl: stri
               <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider mb-1">
                 <span className={`inline-flex items-center gap-1.5`}>
                   <span className="text-red-400 bg-red-400/10 border border-red-400/20 rounded px-1.5 py-0.5 text-2xs font-mono">{e.status}</span>
-                  Error
+                  {t('api.error')}
                 </span>
               </p>
               <pre className="bg-bg-input border border-border rounded-sm px-3 py-2 text-xs font-mono text-txt-muted">
@@ -270,7 +272,7 @@ function EndpointCard({ endpoint, baseUrl }: { endpoint: Endpoint; baseUrl: stri
               className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-xs px-3 py-1.5 rounded-sm transition-colors disabled:opacity-50"
             >
               {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
-              Try it
+              {t('api.tryIt')}
             </button>
 
             {result && (
@@ -298,6 +300,7 @@ function EndpointCard({ endpoint, baseUrl }: { endpoint: Endpoint; baseUrl: stri
 }
 
 export function ApiDocs({ apiKey, baseUrl }: ApiDocsProps) {
+  const { t } = useLocale();
   const [copied, setCopied] = useState(false);
   const displayUrl = `${window.location.origin}${baseUrl}${apiKey}/`;
   const fullBaseUrl = `${baseUrl}${apiKey}/`;
@@ -311,13 +314,13 @@ export function ApiDocs({ apiKey, baseUrl }: ApiDocsProps) {
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="font-mono text-lg font-semibold mb-1">API Documentation</h2>
-        <p className="text-sm text-txt-secondary">Public REST API for the SQL Connector.</p>
+        <h2 className="font-mono text-lg font-semibold mb-1">{t('api.title')}</h2>
+        <p className="text-sm text-txt-secondary">{t('api.subtitle.sql')}</p>
       </div>
 
       {/* Base URL */}
       <div className="bg-bg-surface border border-border rounded p-4">
-        <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider mb-2">Base URL</p>
+        <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider mb-2">{t('api.baseUrl')}</p>
         <div className="flex items-center gap-2">
           <div className="flex-1 bg-bg-input border border-border rounded-sm px-3 py-2 font-mono text-xs text-txt-primary break-all">
             {displayUrl}
@@ -333,16 +336,16 @@ export function ApiDocs({ apiKey, baseUrl }: ApiDocsProps) {
 
       {/* Auth */}
       <div className="bg-bg-surface border border-border rounded p-4">
-        <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider mb-2">Authentication</p>
+        <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider mb-2">{t('api.auth')}</p>
         <p className="text-sm text-txt-secondary">
-          API Key wird als Path-Parameter in der URL übergeben. Kein Authorization Header nötig.
+          {t('api.authDesc')}
         </p>
       </div>
 
       {/* Endpoints */}
       <div>
         <h3 className="font-mono text-sm font-semibold uppercase tracking-wider text-txt-secondary mb-3">
-          Endpoints
+          {t('api.endpoints')}
         </h3>
         <div className="space-y-2">
           {endpoints.map((ep, i) => (

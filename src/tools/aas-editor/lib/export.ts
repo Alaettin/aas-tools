@@ -17,7 +17,7 @@ export function exportToJson(): { json: string; errors: string[] } {
       errors.push(`${err.path}: ${err.message}`);
     }
   } catch (e) {
-    errors.push(`Validierung fehlgeschlagen: ${e instanceof Error ? e.message : String(e)}`);
+    errors.push(`validation.exportFailed: ${e instanceof Error ? e.message : String(e)}`);
   }
 
   const jsonable = aas.jsonization.toJsonable(env);

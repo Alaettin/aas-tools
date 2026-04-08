@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { Plus, Loader2, Search, Pencil, Trash2, Check, X, Box } from 'lucide-react';
 import { useAssets } from '../hooks/useAssets';
 import { validateAssetId } from '../lib/validation';
+import { useLocale } from '@/context/LocaleContext';
 
 interface AssetListProps {
   connectorId: string;
@@ -9,6 +10,7 @@ interface AssetListProps {
 }
 
 export function AssetList({ connectorId, onSelect }: AssetListProps) {
+  const { t } = useLocale();
   const { assets, loading, error, createAsset, renameAsset, deleteAsset } = useAssets(connectorId);
   const [deleting, setDeleting] = useState<string | null>(null);
 
@@ -86,7 +88,7 @@ export function AssetList({ connectorId, onSelect }: AssetListProps) {
           value={newId}
           onChange={e => { setNewId(e.target.value); setCreateError(null); }}
           onKeyDown={e => { if (e.key === 'Enter') handleCreate(); }}
-          placeholder="Neue Asset-ID…"
+          placeholder={t('dti.newAssetPlaceholder')}
           className="flex-1 bg-bg-input border border-border rounded-sm px-3 py-2 text-sm font-mono text-txt-primary placeholder:text-txt-muted focus:border-accent focus:ring-1 focus:ring-accent/30"
         />
         <button
@@ -95,7 +97,7 @@ export function AssetList({ connectorId, onSelect }: AssetListProps) {
           className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-40"
         >
           {creating ? <Loader2 className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
-          Erstellen
+          {t('common.create')}
         </button>
       </div>
       {createError && <p className="text-xs text-red-400 mb-4">{createError}</p>}
@@ -105,7 +107,7 @@ export function AssetList({ connectorId, onSelect }: AssetListProps) {
         <div className="bg-bg-surface border border-border rounded p-8 text-center">
           <Box className="w-8 h-8 text-txt-muted mx-auto mb-3" />
           <p className="text-sm text-txt-secondary">
-            {assets.length === 0 ? 'Noch keine Assets vorhanden.' : 'Keine Treffer.'}
+            {assets.length === 0 ? t('dti.noAssets') : t('dti.noResults')}
           </p>
         </div>
       ) : (
@@ -165,7 +167,7 @@ export function AssetList({ connectorId, onSelect }: AssetListProps) {
                       onClick={async () => { setDeleting(asset.asset_id); await deleteAsset(asset.asset_id); setDeleting(null); }}
                       disabled={deleting === asset.asset_id}
                       className="p-1 text-txt-muted hover:text-red-400 disabled:opacity-50"
-                      title="Löschen"
+                      title={t('common.delete')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>

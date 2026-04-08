@@ -3,6 +3,7 @@ import { Plus, Trash2, Loader2, Upload, ExternalLink, Save, X } from 'lucide-rea
 import { useUploads } from '../hooks/useUploads';
 import { useFileEntries } from '../hooks/useFileEntries';
 import { validateFileId } from '../lib/validation';
+import { useLocale } from '@/context/LocaleContext';
 
 interface FileManagerProps {
   connectorId: string;
@@ -16,6 +17,7 @@ function formatSize(bytes: number): string {
 }
 
 export function FileManager({ connectorId, userId }: FileManagerProps) {
+  const { t } = useLocale();
   const {
     uploads, loading: uploadsLoading, error: uploadsError,
     upload, deleteUpload, getFileUrl,
@@ -99,7 +101,7 @@ export function FileManager({ connectorId, userId }: FileManagerProps) {
           <div>
             <h2 className="font-mono text-lg font-semibold">Uploads</h2>
             <p className="text-xs text-txt-muted mt-0.5">
-              {uploads.length} {uploads.length === 1 ? 'Datei' : 'Dateien'}
+              {uploads.length} {uploads.length === 1 ? t('common.file') : t('common.files')}
             </p>
           </div>
         </div>
@@ -134,13 +136,13 @@ export function FileManager({ connectorId, userId }: FileManagerProps) {
                 className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-40"
               >
                 {uploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />}
-                Hochladen
+                {t('common.upload')}
               </button>
               <button
                 onClick={() => setShowUpload(false)}
                 className="text-sm text-txt-muted hover:text-txt-primary transition-colors px-2"
               >
-                Abbrechen
+                {t('common.cancel')}
               </button>
             </div>
             {uploadError && <p className="text-xs text-red-400">{uploadError}</p>}
@@ -150,7 +152,7 @@ export function FileManager({ connectorId, userId }: FileManagerProps) {
         {/* Uploads Table */}
         {uploads.length === 0 && !showUpload ? (
           <div className="bg-bg-surface border border-border rounded p-6 text-center mb-2">
-            <p className="text-sm text-txt-secondary">Noch keine Dateien hochgeladen.</p>
+            <p className="text-sm text-txt-secondary">{t('dti.noFiles')}</p>
           </div>
         ) : uploads.length > 0 && (
           <div className="bg-bg-surface border border-border rounded overflow-hidden mb-2">
@@ -182,7 +184,7 @@ export function FileManager({ connectorId, userId }: FileManagerProps) {
                   <button
                     onClick={() => deleteUpload(u.file_id)}
                     className="p-1 text-txt-muted hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                    title="Löschen"
+                    title={t('common.delete')}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -218,7 +220,7 @@ export function FileManager({ connectorId, userId }: FileManagerProps) {
             className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-40"
           >
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
-            Speichern
+            {t('common.save')}
           </button>
         </div>
 
@@ -230,7 +232,7 @@ export function FileManager({ connectorId, userId }: FileManagerProps) {
 
         {entries.length === 0 ? (
           <div className="bg-bg-surface border border-border rounded p-6 text-center mb-2">
-            <p className="text-sm text-txt-secondary">Noch keine Einträge vorhanden.</p>
+            <p className="text-sm text-txt-secondary">{t('dti.noEntries')}</p>
           </div>
         ) : (
           <div className="bg-bg-surface border border-border rounded overflow-hidden mb-2">

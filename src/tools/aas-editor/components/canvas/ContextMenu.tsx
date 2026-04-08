@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Trash2, Plus, Clipboard, ClipboardPaste } from 'lucide-react';
+import { useLocale } from '@/context/LocaleContext';
 
 interface ContextMenuProps {
   x: number;
@@ -22,6 +23,7 @@ export function ContextMenu({
   onDelete, onCopy, onPaste, onAddElement,
   onAddShell, onAddSubmodel, onAddCD, hasClipboard,
 }: ContextMenuProps) {
+  const { t } = useLocale();
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -58,7 +60,7 @@ export function ContextMenu({
               className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-txt-secondary hover:text-txt-primary hover:bg-bg-elevated transition-colors"
             >
               <Clipboard className="w-3.5 h-3.5" />
-              Kopieren
+              {t('aasEditor.copy')}
             </button>
           )}
           {onPaste && hasClipboard && (
@@ -78,7 +80,7 @@ export function ContextMenu({
                 className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-red-400 hover:bg-red-400/10 transition-colors"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                Löschen
+                {t('common.delete')}
               </button>
             </>
           )}
@@ -91,7 +93,7 @@ export function ContextMenu({
               className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-txt-secondary hover:text-txt-primary hover:bg-bg-elevated transition-colors"
             >
               <Plus className="w-3.5 h-3.5 text-blue-400" />
-              Neue AAS
+              {t('aasEditor.newAas')}
             </button>
           )}
           {onAddSubmodel && (
@@ -100,7 +102,7 @@ export function ContextMenu({
               className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-txt-secondary hover:text-txt-primary hover:bg-bg-elevated transition-colors"
             >
               <Plus className="w-3.5 h-3.5 text-purple-400" />
-              Neues Submodel
+              {t('aasEditor.newSubmodel')}
             </button>
           )}
           {onAddCD && (
@@ -109,7 +111,7 @@ export function ContextMenu({
               className="w-full flex items-center gap-2 px-3 py-1.5 text-xs text-txt-secondary hover:text-txt-primary hover:bg-bg-elevated transition-colors"
             >
               <Plus className="w-3.5 h-3.5 text-orange-400" />
-              Neue CD
+              {t('aasEditor.newCd')}
             </button>
           )}
           {onPaste && hasClipboard && (

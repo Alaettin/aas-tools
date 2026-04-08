@@ -25,7 +25,7 @@ export function useUploads(connectorId: string, userId: string) {
       }
     } catch {
       if (!mountedRef.current) return;
-      setError('Verbindung fehlgeschlagen.');
+      setError('common.connectionFailed');
     }
     setLoading(false);
   }, [connectorId]);
@@ -69,7 +69,7 @@ export function useUploads(connectorId: string, userId: string) {
       }, { onConflict: 'connector_id,file_id' });
 
     if (dbErr) {
-      setError('Datei-Eintrag konnte nicht gespeichert werden.');
+      setError('dti.fileEntryFailed');
       return false;
     }
 
@@ -92,7 +92,7 @@ export function useUploads(connectorId: string, userId: string) {
       .eq('file_id', fileId);
 
     if (dbErr) {
-      setError('Datei konnte nicht gelöscht werden.');
+      setError('dti.fileSaveFailed');
       return false;
     }
 

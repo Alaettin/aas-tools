@@ -3,6 +3,7 @@ import { X, ChevronDown } from 'lucide-react';
 import { useAasStore, type NodeData, type SubmodelElementNodeData } from '../../store/aasStore';
 import { DataTypeDefXsd, ModellingKind, AssetKind, EntityType, type LangString, type SubmodelElement, type Reference, ReferenceTypes, type EmbeddedDataSpecification } from '../../types';
 import type { Node } from 'reactflow';
+import { useLocale } from '@/context/LocaleContext';
 
 interface DetailPanelProps {
   nodes: Node[];
@@ -49,6 +50,7 @@ function Select({ label, value, options, onChange }: { label: string; value: str
 }
 
 function LangStringsEditor({ label, value, onChange }: { label: string; value: LangString[]; onChange: (v: LangString[]) => void }) {
+  const { t } = useLocale();
   const add = () => onChange([...value, { language: 'en', text: '' }]);
   return (
     <div>
@@ -66,7 +68,7 @@ function LangStringsEditor({ label, value, onChange }: { label: string; value: L
           </div>
         ))}
       </div>
-      <button onClick={add} className="text-2xs text-accent hover:text-accent-hover mt-1">+ Hinzufügen</button>
+      <button onClick={add} className="text-2xs text-accent hover:text-accent-hover mt-1">{t('aasEditor.addElement')}</button>
     </div>
   );
 }
@@ -102,6 +104,7 @@ function LinkedDataSpecSection({ semanticId, ownSpecs, onOwnChange: _onOwnChange
   ownSpecs: EmbeddedDataSpecification[];
   onOwnChange: (v: EmbeddedDataSpecification[]) => void;
 }) {
+  const { t } = useLocale();
   const cds = useAasStore(s => s.conceptDescriptions);
   const semIdValue = semanticId?.keys?.[0]?.value;
   const linkedCd = semIdValue ? cds.find(cd => cd.id === semIdValue) : undefined;
@@ -111,7 +114,7 @@ function LinkedDataSpecSection({ semanticId, ownSpecs, onOwnChange: _onOwnChange
     if (cdSpecs.length === 0) {
       return (
         <Section title={`Data Specs (CD: ${linkedCd.idShort || 'CD'})`} defaultOpen={false}>
-          <p className="text-2xs text-txt-muted">Keine Data Specifications in der verbundenen CD.</p>
+          <p className="text-2xs text-txt-muted">{t('aasEditor.noDataSpecs')}</p>
         </Section>
       );
     }

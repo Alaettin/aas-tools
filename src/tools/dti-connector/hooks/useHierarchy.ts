@@ -41,7 +41,7 @@ export function useHierarchy(connectorId: string) {
         }
       } catch {
         if (cancelled) return;
-        setError('Verbindung fehlgeschlagen.');
+        setError('common.connectionFailed');
       }
       setLoading(false);
     })();
@@ -88,7 +88,7 @@ export function useHierarchy(connectorId: string) {
       .eq('connector_id', connectorId);
 
     if (delErr) {
-      setError('Speichern fehlgeschlagen.');
+      setError('common.saveFailed');
       setSaving(false);
       return false;
     }
@@ -112,7 +112,7 @@ export function useHierarchy(connectorId: string) {
             backup.map(b => ({ connector_id: connectorId, level: b.level, name: b.name }))
           );
         }
-        setError('Speichern fehlgeschlagen.');
+        setError('common.saveFailed');
         setSaving(false);
         return false;
       }

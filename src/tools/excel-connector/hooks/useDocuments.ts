@@ -19,7 +19,7 @@ export function useDocuments(userId: string, connectorId: string) {
         .list(prefix, { limit: 500, sortBy: { column: 'name', order: 'asc' } });
 
       if (!mountedRef.current) return;
-      if (err) { setError('Dateien konnten nicht geladen werden.'); }
+      if (err) { setError('common.loadFailed'); }
       else {
         setDocuments((data || []).filter(f => f.name !== '.emptyFolderPlaceholder').map(f => ({
           name: f.name,
@@ -30,7 +30,7 @@ export function useDocuments(userId: string, connectorId: string) {
         })));
       }
     } catch {
-      if (mountedRef.current) setError('Verbindung fehlgeschlagen.');
+      if (mountedRef.current) setError('common.connectionFailed');
     }
     setLoading(false);
   }, [prefix]);
@@ -50,7 +50,7 @@ export function useDocuments(userId: string, connectorId: string) {
       .upload(path, file, { upsert: true });
 
     if (err) {
-      setError('Upload fehlgeschlagen: ' + err.message);
+      setError('common.uploadFailed');
       return false;
     }
     await fetch();
@@ -66,7 +66,7 @@ export function useDocuments(userId: string, connectorId: string) {
       .remove([path]);
 
     if (err) {
-      setError('Löschen fehlgeschlagen.');
+      setError('common.deleteFailed');
       return false;
     }
     setDocuments(prev => prev.filter(d => d.name !== fileName));

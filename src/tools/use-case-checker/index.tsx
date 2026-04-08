@@ -18,9 +18,6 @@ export default function UseCaseChecker() {
       {/* Header */}
       <div className="mb-2">
         <h1 className="font-mono text-2xl font-bold">Use Case Checker</h1>
-        <p className="text-sm text-txt-secondary mt-1">
-          {t('ucc.subtitle')}
-        </p>
       </div>
 
       {/* Tab Navigation */}
