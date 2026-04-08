@@ -55,11 +55,12 @@ Deno.serve(async (req) => {
   const cid = conn.connector_id
 
   const path = '/' + parts.slice(apiKeyIndex + 1).join('/')
+  const pathLower = path.toLowerCase()
   const method = req.method
 
   try {
     // GET /Product/ids
-    if (method === 'GET' && path === '/Product/ids') {
+    if (method === 'GET' && pathLower === '/product/ids') {
       const { data } = await supabase
         .from('dti_assets')
         .select('asset_id')
@@ -69,12 +70,12 @@ Deno.serve(async (req) => {
     }
 
     // GET /Product/hierarchies
-    if (method === 'GET' && path === '/Product/hierarchies') {
+    if (method === 'GET' && pathLower === '/product/hierarchies') {
       return json([])
     }
 
     // GET /Product/hierarchy/levels
-    if (method === 'GET' && path === '/Product/hierarchy/levels') {
+    if (method === 'GET' && pathLower === '/product/hierarchy/levels') {
       const { data } = await supabase
         .from('dti_hierarchy_levels')
         .select('level, name')
@@ -84,7 +85,7 @@ Deno.serve(async (req) => {
     }
 
     // GET /Product/:itemId/hierarchy
-    const hierMatch = path.match(/^\/Product\/([^/]+)\/hierarchy$/)
+    const hierMatch = path.match(/^\/product\/([^/]+)\/hierarchy$/i)
     if (method === 'GET' && hierMatch) {
       const itemId = decodeURIComponent(hierMatch[1])
 
@@ -120,7 +121,7 @@ Deno.serve(async (req) => {
     }
 
     // POST /Product/:itemId/values
-    const valMatch = path.match(/^\/Product\/([^/]+)\/values$/)
+    const valMatch = path.match(/^\/product\/([^/]+)\/values$/i)
     if (method === 'POST' && valMatch) {
       const itemId = decodeURIComponent(valMatch[1])
 
@@ -280,7 +281,7 @@ Deno.serve(async (req) => {
     }
 
     // POST /Product/:itemId/documents
-    const docMatch = path.match(/^\/Product\/([^/]+)\/documents$/)
+    const docMatch = path.match(/^\/product\/([^/]+)\/documents$/i)
     if (method === 'POST' && docMatch) {
       const itemId = decodeURIComponent(docMatch[1])
 
@@ -336,7 +337,7 @@ Deno.serve(async (req) => {
     }
 
     // GET /model
-    if (method === 'GET' && path === '/model') {
+    if (method === 'GET' && pathLower === '/model') {
       const { data } = await supabase
         .from('dti_model_datapoints')
         .select('dp_id, name, type')

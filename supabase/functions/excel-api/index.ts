@@ -123,6 +123,7 @@ Deno.serve(async (req) => {
   if (!conn.excel_path) return err('No Excel file configured', 404)
 
   const path = '/' + parts.slice(1).join('/')
+  const pathLower = path.toLowerCase()
   const method = req.method
 
   try {
@@ -144,22 +145,22 @@ Deno.serve(async (req) => {
     const excel = parseExcel(rows)
 
     // GET /Product/ids
-    if (method === 'GET' && path === '/Product/ids') {
+    if (method === 'GET' && pathLower === '/product/ids') {
       return json(excel.assetIds)
     }
 
     // GET /Product/hierarchies
-    if (method === 'GET' && path === '/Product/hierarchies') {
+    if (method === 'GET' && pathLower === '/product/hierarchies') {
       return json([])
     }
 
     // GET /Product/hierarchy/levels
-    if (method === 'GET' && path === '/Product/hierarchy/levels') {
+    if (method === 'GET' && pathLower === '/product/hierarchy/levels') {
       return json(excel.hierarchyLevels)
     }
 
     // GET /Product/:itemId/hierarchy
-    const hierMatch = path.match(/^\/Product\/([^/]+)\/hierarchy$/)
+    const hierMatch = path.match(/^\/product\/([^/]+)\/hierarchy$/i)
     if (method === 'GET' && hierMatch) {
       const itemId = decodeURIComponent(hierMatch[1])
       const colIdx = excel.assetColIndex.get(itemId)
@@ -173,7 +174,7 @@ Deno.serve(async (req) => {
     }
 
     // POST /Product/:itemId/values
-    const valMatch = path.match(/^\/Product\/([^/]+)\/values$/)
+    const valMatch = path.match(/^\/product\/([^/]+)\/values$/i)
     if (method === 'POST' && valMatch) {
       const itemId = decodeURIComponent(valMatch[1])
       const colIdx = excel.assetColIndex.get(itemId)
@@ -270,7 +271,7 @@ Deno.serve(async (req) => {
 
     // POST /Product/:itemId/documents
     // propertyIds = filenames without extension (from values call needsResolve: true)
-    const docMatch = path.match(/^\/Product\/([^/]+)\/documents$/)
+    const docMatch = path.match(/^\/product\/([^/]+)\/documents$/i)
     if (method === 'POST' && docMatch) {
       const itemId = decodeURIComponent(docMatch[1])
       const colIdx = excel.assetColIndex.get(itemId)
@@ -334,7 +335,7 @@ Deno.serve(async (req) => {
     }
 
     // GET /model
-    if (method === 'GET' && path === '/model') {
+    if (method === 'GET' && pathLower === '/model') {
       const seen = new Set<string>()
       const result: any[] = []
 

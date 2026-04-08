@@ -106,6 +106,7 @@ Deno.serve(async (req) => {
   if (!conn.excel_path) return err('No Excel file configured', 404)
 
   const path = '/' + parts.slice(1).join('/')
+  const pathLower = path.toLowerCase()
   const method = req.method
 
   try {
@@ -127,7 +128,7 @@ Deno.serve(async (req) => {
     const colIdx = excel.globalColIdx
 
     // POST /Product/:itemId/values — itemId is ignored
-    const valMatch = path.match(/^\/Product\/([^/]+)\/values$/)
+    const valMatch = path.match(/^\/product\/([^/]+)\/values$/i)
     if (method === 'POST' && valMatch) {
       let body: any = {}
       try { body = await req.json() } catch { /* empty body = return all */ }
@@ -214,7 +215,7 @@ Deno.serve(async (req) => {
     }
 
     // POST /Product/:itemId/documents — itemId is ignored
-    const docMatch = path.match(/^\/Product\/([^/]+)\/documents$/)
+    const docMatch = path.match(/^\/product\/([^/]+)\/documents$/i)
     if (method === 'POST' && docMatch) {
       let body: any = {}
       try { body = await req.json() } catch { /* empty body = return all */ }
@@ -272,7 +273,7 @@ Deno.serve(async (req) => {
     }
 
     // GET /model
-    if (method === 'GET' && path === '/model') {
+    if (method === 'GET' && pathLower === '/model') {
       const seen = new Set<string>()
       const result: any[] = []
 
