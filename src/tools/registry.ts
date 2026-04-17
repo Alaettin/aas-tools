@@ -70,6 +70,17 @@ export const tools: ToolDefinition[] = [
     requiredRole: 'user',
     component: lazy(() => import('./use-case-checker')),
   },
+  {
+    id: 'iec-61406-qr',
+    name: 'IEC 61406 QR',
+    description: 'Normkonforme QR-Codes mit ID-Link Dreieck-Marker erzeugen.',
+    icon: 'QrCode',
+    iconColor: 'text-cyan-400',
+    category: 'tool',
+    status: 'active',
+    requiredRole: 'user',
+    component: lazy(() => import('./iec-61406-qr')),
+  },
 ];
 
 export function getActiveTools() {

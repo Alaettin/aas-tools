@@ -19,6 +19,7 @@ import {
   BookMarked,
   ClipboardCheck,
   Globe,
+  QrCode,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, (cls: string) => React.ReactNode> = {
@@ -27,6 +28,7 @@ const ICON_MAP: Record<string, (cls: string) => React.ReactNode> = {
   FileSpreadsheet: (cls) => <FileSpreadsheet className={cls} />,
   ClipboardCheck: (cls) => <ClipboardCheck className={cls} />,
   Globe: (cls) => <Globe className={cls} />,
+  QrCode: (cls) => <QrCode className={cls} />,
 };
 
 const DOC_ICON_MAP: Record<string, (cls: string) => React.ReactNode> = {
