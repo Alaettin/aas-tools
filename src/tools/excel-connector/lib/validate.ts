@@ -3,7 +3,7 @@ export interface ValidationResult {
   warnings: string[];
 }
 
-const ASSET_ID_RE = /^[a-zA-Z0-9_]+$/;
+const ASSET_ID_RE = /^[a-zA-Z0-9_-]+$/;
 
 export function validateExcel(
   rows: (string | number | null)[][],
@@ -26,12 +26,12 @@ export function validateExcel(
     errors.push('Zeile 1, Spalte B muss "Type" enthalten.');
   }
 
-  // Validate Asset-IDs (column C+): no duplicates, only alphanumeric + underscore
+  // Validate Asset-IDs (column C+): no duplicates, only alphanumeric + underscore + hyphen
   const assetIds = header.slice(2).map(v => String(v || '').trim()).filter(Boolean);
   const seenIds = new Set<string>();
   for (const id of assetIds) {
     if (!ASSET_ID_RE.test(id)) {
-      errors.push(`Asset-ID "${id}" enthält ungültige Zeichen (nur Buchstaben, Zahlen, Underscore erlaubt).`);
+      errors.push(`Asset-ID "${id}" enthält ungültige Zeichen (nur Buchstaben, Zahlen, Underscore und Bindestrich erlaubt).`);
     }
     if (seenIds.has(id)) {
       errors.push(`Asset-ID "${id}" ist doppelt.`);
