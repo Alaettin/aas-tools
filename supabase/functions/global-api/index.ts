@@ -3,6 +3,10 @@
 //
 // Base URL: https://{project-ref}.supabase.co/functions/v1/global-api/{apiKey}/...
 // The itemId parameter is ignored — all endpoints always return the GLOBAL (first asset) column.
+//
+// File handling: Documents werden als base64 inline geliefert (Default). Mit ?urls=1
+// (oder Body returnUrls:true) kommen stattdessen Signed URLs (TTL 300s) zurück
+// (isUrl:true) → vermeidet riesige Payloads bei großen Dateien. (analog excel-api)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 import * as XLSX from 'https://esm.sh/xlsx@0.18.5/xlsx.mjs'
@@ -25,6 +29,16 @@ function err(message: string, status: number) {
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function bytesToBase64(bytes: Uint8Array): string {
+  const CHUNK = 0x8000
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    const sub = bytes.subarray(i, Math.min(i + CHUNK, bytes.length))
+    binary += String.fromCharCode.apply(null, sub as unknown as number[])
+  }
+  return btoa(binary)
+}
 
 function guessMimeType(filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
@@ -109,6 +123,9 @@ Deno.serve(async (req) => {
   const pathLower = path.toLowerCase()
   const method = req.method
 
+  // ?urls=1 → Documents als signedUrl statt base64 (massive Egress-/Payload-Ersparnis)
+  const returnUrls = url.searchParams.get('urls') === '1'
+
   try {
     const { data: signedData } = await supabase.storage
       .from('global-connectors')
@@ -140,6 +157,9 @@ Deno.serve(async (req) => {
       const withoutLangIds: string[] = Array.isArray(withoutLang.propertyIds) ? withoutLang.propertyIds : []
       const allEmpty = languages.length === 0 && withLangIds.length === 0 && withoutLangIds.length === 0
 
+      // Body kann auch returnUrls: true setzen (alternativ zu Query-Param)
+      const useUrls = returnUrls || body.returnUrls === true
+
       const result: any[] = []
       const docFolder = `${conn.user_id}/${conn.connector_id}/documents`
 
@@ -164,6 +184,26 @@ Deno.serve(async (req) => {
         if (dp.type === 'Document') {
           const storagePath = `${docFolder}/${value}`
           const mimeFromExt = guessMimeType(value)
+
+          // Empfohlen: Signed URL statt base64 → kein Egress wenn Consumer nicht runterlädt
+          if (useUrls) {
+            const { data: signedUrlData } = await supabase.storage
+              .from('global-connectors')
+              .createSignedUrl(storagePath, 300)
+            if (signedUrlData?.signedUrl) {
+              result.push({
+                propertyId: dp.cleanKey,
+                value: signedUrlData.signedUrl,
+                mimeType: mimeFromExt,
+                filename: filenameNoExt,
+                valueLanguage: dp.lang,
+                needsResolve: false,
+                isUrl: true,
+              })
+              continue
+            }
+          }
+
           const { data: signed } = await supabase.storage
             .from('global-connectors')
             .createSignedUrl(storagePath, 60)
@@ -176,13 +216,9 @@ Deno.serve(async (req) => {
               const isImage = mimeType.startsWith('image/')
 
               if (isImage) {
-                const bytes = new Uint8Array(fileBuffer)
-                let binary = ''
-                for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
-
                 result.push({
                   propertyId: dp.cleanKey,
-                  value: btoa(binary),
+                  value: bytesToBase64(new Uint8Array(fileBuffer)),
                   mimeType,
                   filename: filenameNoExt,
                   valueLanguage: dp.lang,
@@ -221,6 +257,7 @@ Deno.serve(async (req) => {
       try { body = await req.json() } catch { /* empty body = return all */ }
       const languages: string[] = Array.isArray(body.languages) && body.languages.length > 0 ? body.languages : ['en', 'de']
       const propertyIds: string[] = Array.isArray(body.propertyIds) ? body.propertyIds : []
+      const useUrls = returnUrls || body.returnUrls === true
 
       const result: any[] = []
       const docFolder = `${conn.user_id}/${conn.connector_id}/documents`
@@ -245,6 +282,24 @@ Deno.serve(async (req) => {
           if (!languages.includes(entry.lang)) continue
 
           const storagePath = `${docFolder}/${entry.filename}`
+
+          if (useUrls) {
+            const { data: signedUrlData } = await supabase.storage
+              .from('global-connectors')
+              .createSignedUrl(storagePath, 300)
+            if (signedUrlData?.signedUrl) {
+              result.push({
+                propertyId: fileId,
+                value: signedUrlData.signedUrl,
+                filename: fileId,
+                valueLanguage: entry.lang,
+                needsResolve: false,
+                isUrl: true,
+              })
+            }
+            continue
+          }
+
           const { data: signed } = await supabase.storage
             .from('global-connectors')
             .createSignedUrl(storagePath, 60)
@@ -253,13 +308,9 @@ Deno.serve(async (req) => {
             const fileRes = await fetch(signed.signedUrl)
             if (fileRes.ok) {
               const fileBuffer = await fileRes.arrayBuffer()
-              const bytes = new Uint8Array(fileBuffer)
-              let binary = ''
-              for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
-
               result.push({
                 propertyId: fileId,
-                value: btoa(binary),
+                value: bytesToBase64(new Uint8Array(fileBuffer)),
                 filename: fileId,
                 valueLanguage: entry.lang,
                 needsResolve: false,

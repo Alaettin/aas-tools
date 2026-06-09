@@ -2,6 +2,10 @@
 // Deploy: supabase functions deploy dti-api --no-verify-jwt
 //
 // Base URL: https://{project-ref}.supabase.co/functions/v1/dti-api/v1/{apiKey}/...
+//
+// File handling: Files werden als base64 inline geliefert (Default). Mit ?urls=1
+// (oder Body returnUrls:true) kommen stattdessen Signed URLs (TTL 300s) zurück
+// (isUrl:true) → vermeidet riesige Payloads bei großen Dateien. (analog excel-api)
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
 
@@ -23,6 +27,16 @@ function err(message: string, status: number) {
 }
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function bytesToBase64(bytes: Uint8Array): string {
+  const CHUNK = 0x8000
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    const sub = bytes.subarray(i, Math.min(i + CHUNK, bytes.length))
+    binary += String.fromCharCode.apply(null, sub as unknown as number[])
+  }
+  return btoa(binary)
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
@@ -57,6 +71,9 @@ Deno.serve(async (req) => {
   const path = '/' + parts.slice(apiKeyIndex + 1).join('/')
   const pathLower = path.toLowerCase()
   const method = req.method
+
+  // ?urls=1 → Files als signedUrl statt base64 (massive Egress-/Payload-Ersparnis)
+  const returnUrls = url.searchParams.get('urls') === '1'
 
   try {
     // GET /Product/ids
@@ -176,17 +193,14 @@ Deno.serve(async (req) => {
 
       const uploadMap = new Map((uploads || []).map((u: any) => [u.file_id, u]))
 
-      // Helper: download file and return base64
-      async function readFileBase64(storagePath: string): Promise<string> {
+      // Helper: download file and return base64. Returns null if missing.
+      async function readFileBase64(storagePath: string): Promise<string | null> {
         const { data: fileData } = await supabase.storage
           .from('dti-files')
           .download(storagePath)
-        if (!fileData) return ''
+        if (!fileData) return null
         const buffer = await fileData.arrayBuffer()
-        const bytes = new Uint8Array(buffer)
-        let binary = ''
-        for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
-        return btoa(binary)
+        return bytesToBase64(new Uint8Array(buffer))
       }
 
       const body = await req.json()
@@ -196,6 +210,7 @@ Deno.serve(async (req) => {
       const withLangIds: string[] = Array.isArray(withLang.propertyIds) ? withLang.propertyIds : []
       const withoutLangIds: string[] = Array.isArray(withoutLang.propertyIds) ? withoutLang.propertyIds : []
       const allEmpty = languages.length === 0 && withLangIds.length === 0 && withoutLangIds.length === 0
+      const useUrls = returnUrls || body.returnUrls === true
 
       // Process a single key with language filter
       async function processKey(key: string, langFilter: string[], result: any[]) {
@@ -218,19 +233,36 @@ Deno.serve(async (req) => {
             const upload = uploadMap.get(fileId)
             if (!upload) continue
 
-            const isImage = upload.mime_type?.startsWith('image/')
-            if (isImage) {
-              const base64 = await readFileBase64(upload.storage_path)
-              if (base64) {
+            // Empfohlen: Signed URL statt base64 → kein Egress wenn Consumer nicht runterlädt
+            if (useUrls) {
+              const { data: signedUrlData } = await supabase.storage
+                .from('dti-files')
+                .createSignedUrl(upload.storage_path, 300)
+              if (signedUrlData?.signedUrl) {
                 result.push({
                   propertyId: key,
-                  value: base64,
+                  value: signedUrlData.signedUrl,
                   mimeType: upload.mime_type,
                   filename: upload.original_name.replace(/\.[^.]+$/, ''),
                   valueLanguage: lang,
                   needsResolve: false,
+                  isUrl: true,
                 })
+                continue
               }
+            }
+
+            const isImage = upload.mime_type?.startsWith('image/')
+            const base64 = isImage ? await readFileBase64(upload.storage_path) : null
+            if (base64) {
+              result.push({
+                propertyId: key,
+                value: base64,
+                mimeType: upload.mime_type,
+                filename: upload.original_name.replace(/\.[^.]+$/, ''),
+                valueLanguage: lang,
+                needsResolve: false,
+              })
             } else {
               result.push({
                 propertyId: key,
@@ -296,6 +328,7 @@ Deno.serve(async (req) => {
       const body = await req.json()
       const languages: string[] = Array.isArray(body.languages) && body.languages.length > 0 ? body.languages : ['en']
       const propertyIds: string[] = Array.isArray(body.propertyIds) ? body.propertyIds : []
+      const useUrls = returnUrls || body.returnUrls === true
 
       // Get uploads directly
       const { data: uploads } = await supabase
@@ -311,21 +344,41 @@ Deno.serve(async (req) => {
         const upload = uploadMap.get(fileId)
         if (!upload) continue
 
+        const filenameNoExt = upload.original_name.replace(/\.[^.]+$/, '')
+
+        // Empfohlen: Signed URL statt base64 → kein Egress wenn Consumer nicht runterlädt
+        if (useUrls) {
+          const { data: signedUrlData } = await supabase.storage
+            .from('dti-files')
+            .createSignedUrl(upload.storage_path, 300)
+          if (signedUrlData?.signedUrl) {
+            for (const lang of languages) {
+              result.push({
+                propertyId: fileId,
+                value: signedUrlData.signedUrl,
+                filename: filenameNoExt,
+                valueLanguage: lang,
+                needsResolve: false,
+                isUrl: true,
+              })
+            }
+          }
+          continue
+        }
+
         const { data: fileData } = await supabase.storage
           .from('dti-files')
           .download(upload.storage_path)
 
         if (fileData) {
           const buffer = await fileData.arrayBuffer()
-          const bytes = new Uint8Array(buffer)
-          let binary = ''
-          for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
+          const value = bytesToBase64(new Uint8Array(buffer))
 
           for (const lang of languages) {
             result.push({
               propertyId: fileId,
-              value: btoa(binary),
-              filename: upload.original_name.replace(/\.[^.]+$/, ''),
+              value,
+              filename: filenameNoExt,
               valueLanguage: lang,
               needsResolve: false,
             })
