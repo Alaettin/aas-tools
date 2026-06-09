@@ -60,6 +60,17 @@ export const tools: ToolDefinition[] = [
     component: lazy(() => import('./global-connector')),
   },
   {
+    id: 'connector-proxy',
+    name: 'Connector Proxy',
+    description: 'Leite API-Calls an einen anderen Connector weiter.',
+    icon: 'Share2',
+    iconColor: 'text-fuchsia-400',
+    category: 'connector',
+    status: 'active',
+    requiredRole: 'user',
+    component: lazy(() => import('./connector-proxy')),
+  },
+  {
     id: 'aas-mcp',
     name: 'MCP Server',
     description: 'Stelle eine AAS-Repository-API als MCP-Server für andere Clients bereit.',

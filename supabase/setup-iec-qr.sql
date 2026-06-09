@@ -1,6 +1,7 @@
 -- ============================================
 -- IEC 61406 QR Code Generator — Supabase Setup
 -- Dieses SQL im Supabase SQL Editor ausführen
+-- Idempotent — mehrfaches Ausführen ist sicher.
 -- ============================================
 
 create table if not exists public.iec_qr_codes (
@@ -16,6 +17,10 @@ create index if not exists iec_qr_codes_user_idx
   on public.iec_qr_codes (user_id, created_at desc);
 
 alter table public.iec_qr_codes enable row level security;
+
+drop policy if exists "Users can read own qr codes" on public.iec_qr_codes;
+drop policy if exists "Users can insert own qr codes" on public.iec_qr_codes;
+drop policy if exists "Users can delete own qr codes" on public.iec_qr_codes;
 
 create policy "Users can read own qr codes" on public.iec_qr_codes for select using (user_id = auth.uid());
 create policy "Users can insert own qr codes" on public.iec_qr_codes for insert with check (user_id = auth.uid());

@@ -1,7 +1,11 @@
 import { useState } from 'react';
 import { ChevronRight, Copy, Check, Play, Loader2 } from 'lucide-react';
 import { useLocale } from '@/context/LocaleContext';
-import type { ExcelConnector } from '../types';
+
+interface ApiDocsProps {
+  apiKey: string;
+  baseUrl: string;
+}
 
 interface Endpoint {
   method: 'GET' | 'POST';
@@ -19,11 +23,11 @@ const endpoints: Endpoint[] = [
     method: 'GET',
     path: '/Product/ids',
     summary: 'List all asset IDs',
-    description: 'Returns an array of all asset IDs defined in the Excel header row (columns C+).',
-    responseExample: '["ASSET001", "ASSET002"]',
+    description: 'Returns an array of all asset IDs for this connector.',
+    responseExample: '["CBL001", "CBL002", "DISH001"]',
     errors: [
       { status: 401, body: '{ "error": "Invalid API key" }' },
-      { status: 404, body: '{ "error": "No Excel file configured" }' },
+      { status: 502, body: '{ "error": "Upstream fetch failed" }' },
     ],
   },
   {
@@ -38,27 +42,27 @@ const endpoints: Endpoint[] = [
     method: 'GET',
     path: '/Product/hierarchy/levels',
     summary: 'Get hierarchy levels',
-    description: 'Returns the hierarchy level definitions from the Excel (rows between "Hierarchy levels" marker and the first empty row).',
+    description: 'Returns all defined hierarchy levels, ordered by level number.',
     responseExample: `[
-  { "level": 1, "name": "Segment" },
-  { "level": 2, "name": "Main Group" },
-  { "level": 3, "name": "Group" }
+  { "level": 1, "name": "ProductType" },
+  { "level": 2, "name": "Manufacturer" },
+  { "level": 3, "name": "Series" }
 ]`,
     errors: [
       { status: 401, body: '{ "error": "Invalid API key" }' },
-      { status: 500, body: '{ "error": "Internal server error" }' },
+      { status: 502, body: '{ "error": "Upstream fetch failed" }' },
     ],
   },
   {
     method: 'GET',
     path: '/Product/:itemId/hierarchy',
     summary: 'Get asset hierarchy values',
-    description: 'Returns the hierarchy level values for a specific asset from the Excel.',
-    pathParams: [{ name: 'itemId', placeholder: 'e.g. ASSET001' }],
+    description: 'Returns the hierarchy level values for a specific asset.',
+    pathParams: [{ name: 'itemId', placeholder: 'e.g. CBL001' }],
     responseExample: `[
-  { "level": 1, "name": "Example Segment" },
-  { "level": 2, "name": "Example Group" },
-  { "level": 3, "name": "Example Subgroup" }
+  { "level": 1, "name": "Electric engineering" },
+  { "level": 2, "name": "Cable, wire" },
+  { "level": 3, "name": "Energy cable" }
 ]`,
     errors: [
       { status: 401, body: '{ "error": "Invalid API key" }' },
@@ -69,8 +73,8 @@ const endpoints: Endpoint[] = [
     method: 'POST',
     path: '/Product/:itemId/values',
     summary: 'Get property values',
-    description: 'Returns property values for a specific asset. Filter by language and property IDs. Empty body returns all values.',
-    pathParams: [{ name: 'itemId', placeholder: 'e.g. ASSET001' }],
+    description: 'Returns property values for a specific asset. Filter by language and property IDs.',
+    pathParams: [{ name: 'itemId', placeholder: 'e.g. CBL001' }],
     requestBody: `{
   "propertiesWithLanguage": {
     "languages": ["en", "de"],
@@ -82,15 +86,9 @@ const endpoints: Endpoint[] = [
 }`,
     responseExample: `[
   {
-    "propertyId": "EN:ProductName",
-    "value": "Product A",
+    "propertyId": "dp.color",
+    "value": "Red",
     "valueLanguage": "en",
-    "needsResolve": false
-  },
-  {
-    "propertyId": "DE:ProductName",
-    "value": "Produkt A",
-    "valueLanguage": "de",
     "needsResolve": false
   }
 ]`,
@@ -103,18 +101,17 @@ const endpoints: Endpoint[] = [
     method: 'POST',
     path: '/Product/:itemId/documents',
     summary: 'Get file documents',
-    description: 'Returns document files for a specific asset as Base64 inline.',
-    pathParams: [{ name: 'itemId', placeholder: 'e.g. ASSET001' }],
+    description: 'Returns Base64-encoded file content for requested document properties.',
+    pathParams: [{ name: 'itemId', placeholder: 'e.g. CBL001' }],
     requestBody: `{
-  "languages": ["en", "de"],
-  "propertyIds": []
+  "languages": ["en"],
+  "propertyIds": ["ds_pm0202_en_co"]
 }`,
     responseExample: `[
   {
-    "propertyId": "EN:ProductImage",
+    "propertyId": "ds_pm0202_en_co",
     "value": "JVBERi0xLjQ...",
-    "mimeType": "image/png",
-    "filename": "product_a",
+    "filename": "datasheet.pdf",
     "valueLanguage": "en",
     "needsResolve": false
   }
@@ -128,15 +125,14 @@ const endpoints: Endpoint[] = [
     method: 'GET',
     path: '/model',
     summary: 'Get data model',
-    description: 'Returns all defined datapoints with their ID, name, and type (0 = Property, 1 = Document).',
+    description: 'Returns all defined datapoints with their ID, name, and type (0 = Property, 1 = File).',
     responseExample: `[
-  { "id": "ProductName", "name": "ProductName", "type": 0 },
-  { "id": "SerialNumber", "name": "SerialNumber", "type": 0 },
-  { "id": "ProductImage", "name": "ProductImage", "type": 1 }
+  { "id": "manufacturer", "name": "Manufacturer", "type": 0 },
+  { "id": "datasheet", "name": "Datasheet", "type": 1 }
 ]`,
     errors: [
       { status: 401, body: '{ "error": "Invalid API key" }' },
-      { status: 500, body: '{ "error": "Internal server error" }' },
+      { status: 502, body: '{ "error": "Upstream fetch failed" }' },
     ],
   },
 ];
@@ -292,14 +288,13 @@ function EndpointCard({ endpoint, baseUrl }: { endpoint: Endpoint; baseUrl: stri
   );
 }
 
-export function ApiSettings({ connector }: { connector: ExcelConnector }) {
+export function ApiDocs({ apiKey, baseUrl }: ApiDocsProps) {
   const { t } = useLocale();
   const [copied, setCopied] = useState(false);
+  const displayUrl = `${window.location.origin}${baseUrl}${apiKey}/`;
+  const fullBaseUrl = `${baseUrl}${apiKey}/`;
 
-  const displayUrl = `${window.location.origin}/excel-api/${connector.api_key}/`;
-  const fullBaseUrl = `/excel-api/${connector.api_key}/`;
-
-  const handleCopyUrl = async () => {
+  const handleCopy = async () => {
     await navigator.clipboard.writeText(displayUrl);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -309,32 +304,29 @@ export function ApiSettings({ connector }: { connector: ExcelConnector }) {
     <div className="space-y-6">
       <div>
         <h2 className="font-mono text-lg font-semibold mb-1">{t('api.title')}</h2>
-        <p className="text-sm text-txt-secondary">{t('api.subtitle.excel')}</p>
+        <p className="text-sm text-txt-secondary">{t('api.subtitle.proxy')}</p>
       </div>
 
-      {/* Base URL */}
       <div className="bg-bg-surface border border-border rounded p-4">
         <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider mb-2">{t('api.baseUrl')}</p>
         <div className="flex items-center gap-2">
           <div className="flex-1 bg-bg-input border border-border rounded-sm px-3 py-2 font-mono text-xs text-txt-primary break-all">
             {displayUrl}
           </div>
-          <button onClick={handleCopyUrl}
-            className="flex-shrink-0 p-2 bg-bg-elevated hover:bg-border border border-border rounded-sm transition-colors">
+          <button
+            onClick={handleCopy}
+            className="flex-shrink-0 p-2 bg-bg-elevated hover:bg-border border border-border rounded-sm transition-colors"
+          >
             {copied ? <Check className="w-4 h-4 text-emerald-400" /> : <Copy className="w-4 h-4 text-txt-secondary" />}
           </button>
         </div>
       </div>
 
-      {/* Auth */}
       <div className="bg-bg-surface border border-border rounded p-4">
         <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider mb-2">{t('api.auth')}</p>
-        <p className="text-sm text-txt-secondary">
-          {t('api.authDesc')}
-        </p>
+        <p className="text-sm text-txt-secondary">{t('api.authDesc')}</p>
       </div>
 
-      {/* Endpoints */}
       <div>
         <h3 className="font-mono text-sm font-semibold uppercase tracking-wider text-txt-secondary mb-3">
           {t('api.endpoints')}

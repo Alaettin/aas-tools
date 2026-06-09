@@ -9,6 +9,7 @@ import { SUPERADMIN_EMAIL } from '@/lib/constants';
 
 const toolList = tools.filter(t => t.category === 'tool');
 const connectorList = tools.filter(t => t.category === 'connector');
+const applicationList = tools.filter(t => t.category === 'application');
 import { supabase } from '@/lib/supabase';
 import type { Manual } from '@/docs/types';
 import type { UserRole } from '@/types';
@@ -217,6 +218,44 @@ function UserDetailContent({ userId }: { userId: string }) {
           {isAdmin && (
             <p className="text-2xs text-txt-muted mt-2">
               {t('userDetail.adminConnectorHint')}
+            </p>
+          )}
+        </div>
+      </div>
+
+      {/* Application Access */}
+      <div className="bg-bg-surface border border-border rounded mb-6">
+        <div className="px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <User className="w-4 h-4 text-accent" />
+            <h2 className="font-mono text-sm font-semibold uppercase tracking-wider text-txt-secondary">
+              {t('userDetail.applicationAccess')}
+            </h2>
+          </div>
+        </div>
+        <div className="p-5 space-y-3">
+          {applicationList.length === 0 ? (
+            <p className="text-sm text-txt-muted">{t('userDetail.noApplications')}</p>
+          ) : (
+            applicationList.map(tool => (
+              <label key={tool.id} className="flex items-center gap-3 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={isAdmin || toolAccess.has(tool.id)}
+                  disabled={isAdmin || isProtected}
+                  onChange={() => toggleTool(tool.id)}
+                  className="accent-accent w-4 h-4"
+                />
+                <div>
+                  <span className="text-sm text-txt-primary">{tool.name}</span>
+                  <span className="text-xs text-txt-muted ml-2">{tool.description}</span>
+                </div>
+              </label>
+            ))
+          )}
+          {isAdmin && (
+            <p className="text-2xs text-txt-muted mt-2">
+              {t('userDetail.adminApplicationHint')}
             </p>
           )}
         </div>

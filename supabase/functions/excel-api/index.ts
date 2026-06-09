@@ -25,6 +25,17 @@ function err(message: string, status: number) {
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+// Chunked Uint8Array → base64. Avoids O(n²) string-concat and per-byte loops.
+function bytesToBase64(bytes: Uint8Array): string {
+  const CHUNK = 0x8000
+  let binary = ''
+  for (let i = 0; i < bytes.length; i += CHUNK) {
+    const sub = bytes.subarray(i, Math.min(i + CHUNK, bytes.length))
+    binary += String.fromCharCode.apply(null, sub as unknown as number[])
+  }
+  return btoa(binary)
+}
+
 // Derive MIME type from file extension
 function guessMimeType(filename: string): string {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
@@ -229,14 +240,9 @@ Deno.serve(async (req) => {
               const isImage = mimeType.startsWith('image/')
 
               if (isImage) {
-                // Images: inline as base64
-                const bytes = new Uint8Array(fileBuffer)
-                let binary = ''
-                for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
-
                 result.push({
                   propertyId: dp.cleanKey,
-                  value: btoa(binary),
+                  value: bytesToBase64(new Uint8Array(fileBuffer)),
                   mimeType,
                   filename: filenameNoExt,
                   valueLanguage: dp.lang,
@@ -315,13 +321,9 @@ Deno.serve(async (req) => {
             const fileRes = await fetch(signed.signedUrl)
             if (fileRes.ok) {
               const fileBuffer = await fileRes.arrayBuffer()
-              const bytes = new Uint8Array(fileBuffer)
-              let binary = ''
-              for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i])
-
               result.push({
                 propertyId: fileId,
-                value: btoa(binary),
+                value: bytesToBase64(new Uint8Array(fileBuffer)),
                 filename: fileId,
                 valueLanguage: entry.lang,
                 needsResolve: false,
