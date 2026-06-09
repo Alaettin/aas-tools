@@ -5,6 +5,8 @@ export interface AasMcpServer {
   api_key: string;
   aas_base_url: string | null;
   tool_descriptions: Record<string, string>;
+  available_tools: string[];
+  enabled_tools: string[] | null;
   created_at: string;
 }
 

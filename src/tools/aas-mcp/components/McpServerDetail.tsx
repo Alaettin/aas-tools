@@ -93,12 +93,13 @@ export function McpServerDetail() {
             server={server}
             onApiKeyRegenerate={newKey => setServer(prev => prev ? { ...prev, api_key: newKey } : prev)}
             onBaseUrlChange={url => setServer(prev => prev ? { ...prev, aas_base_url: url } : prev)}
+            onDiscovered={(available, enabled) => setServer(prev => prev ? { ...prev, available_tools: available, enabled_tools: enabled } : prev)}
           />
         )}
         {activeTab === 'tools' && (
           <McpToolsList
             server={server}
-            onChange={td => setServer(prev => prev ? { ...prev, tool_descriptions: td } : prev)}
+            onUpdate={partial => setServer(prev => prev ? { ...prev, ...partial } : prev)}
           />
         )}
         {activeTab === 'api' && <McpDocs apiKey={server.api_key} />}

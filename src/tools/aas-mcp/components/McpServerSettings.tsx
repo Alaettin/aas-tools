@@ -1,18 +1,19 @@
 import { useState } from 'react';
-import { Copy, RefreshCw, Check, Key, Link2, Save, Plug } from 'lucide-react';
+import { Copy, RefreshCw, Check, Key, Link2, Save, Plug, Search } from 'lucide-react';
 import { supabase } from '@/lib/supabase';
 import type { AasMcpServer } from '../types';
 import { validateBaseUrl } from '../lib/validation';
 import { useLocale } from '@/context/LocaleContext';
-import { mcpEndpointUrl } from '../lib/endpoint';
+import { mcpEndpointUrl, mcpDiscoverUrl } from '../lib/endpoint';
 
 interface McpServerSettingsProps {
   server: AasMcpServer;
   onApiKeyRegenerate: (newKey: string) => void;
   onBaseUrlChange: (url: string | null) => void;
+  onDiscovered: (available: string[], enabled: string[]) => void;
 }
 
-export function McpServerSettings({ server, onApiKeyRegenerate, onBaseUrlChange }: McpServerSettingsProps) {
+export function McpServerSettings({ server, onApiKeyRegenerate, onBaseUrlChange, onDiscovered }: McpServerSettingsProps) {
   const { t } = useLocale();
   const [copiedKey, setCopiedKey] = useState(false);
   const [copiedEndpoint, setCopiedEndpoint] = useState(false);
@@ -22,8 +23,36 @@ export function McpServerSettings({ server, onApiKeyRegenerate, onBaseUrlChange 
   const [baseError, setBaseError] = useState<string | null>(null);
   const [savingBase, setSavingBase] = useState(false);
   const [baseSaved, setBaseSaved] = useState(false);
+  const [discovering, setDiscovering] = useState(false);
+  const [discoverMsg, setDiscoverMsg] = useState<{ ok: boolean; text: string } | null>(null);
 
   const endpoint = mcpEndpointUrl(server.api_key);
+
+  const runDiscover = async () => {
+    setDiscovering(true);
+    setDiscoverMsg(null);
+    try {
+      const res = await fetch(mcpDiscoverUrl(server.api_key));
+      const data = await res.json();
+      if (!res.ok) {
+        setDiscoverMsg({ ok: false, text: data?.error || `HTTP ${res.status}` });
+      } else {
+        // Re-read the persisted available/enabled sets (the edge function stored them).
+        const { data: row } = await supabase
+          .from('aas_mcp_servers')
+          .select('available_tools, enabled_tools')
+          .eq('server_id', server.server_id)
+          .single();
+        const available: string[] = (row?.available_tools as string[]) ?? (data.tools || []).map((x: { name: string }) => x.name);
+        const enabled: string[] = (row?.enabled_tools as string[]) ?? available;
+        onDiscovered(available, enabled);
+        setDiscoverMsg({ ok: true, text: t('mcp.discoverOk', { count: available.length }) });
+      }
+    } catch (e) {
+      setDiscoverMsg({ ok: false, text: String(e) });
+    }
+    setDiscovering(false);
+  };
 
   const handleCopyKey = async () => {
     await navigator.clipboard.writeText(server.api_key);
@@ -68,6 +97,8 @@ export function McpServerSettings({ server, onApiKeyRegenerate, onBaseUrlChange 
       onBaseUrlChange(value);
       setBaseSaved(true);
       setTimeout(() => setBaseSaved(false), 2000);
+      // Dynamically detect which tools the AAS repo supports.
+      if (value) await runDiscover();
     } else {
       setBaseError('common.saveFailed');
     }
@@ -105,14 +136,23 @@ export function McpServerSettings({ server, onApiKeyRegenerate, onBaseUrlChange 
             {baseError && <p className="text-xs text-red-400 mt-1.5">{baseError}</p>}
             <p className="text-2xs text-txt-muted mt-1.5">{t('mcp.baseUrlHint')}</p>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-3 flex-wrap">
             <button
               onClick={handleSaveBase}
-              disabled={savingBase || !baseDirty}
+              disabled={savingBase || discovering || !baseDirty}
               className="flex items-center gap-2 bg-accent hover:bg-accent-hover text-bg-primary font-medium text-sm px-4 py-2 rounded-sm transition-colors disabled:opacity-50"
             >
               {savingBase ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
               {t('common.save')}
+            </button>
+            <button
+              onClick={runDiscover}
+              disabled={discovering || savingBase || !server.aas_base_url}
+              className="flex items-center gap-2 text-sm text-txt-secondary hover:text-txt-primary border border-border rounded-sm px-3 py-2 transition-colors disabled:opacity-50"
+              title={t('mcp.rediscover')}
+            >
+              {discovering ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Search className="w-3.5 h-3.5" />}
+              {t('mcp.rediscover')}
             </button>
             {baseSaved && (
               <span className="text-xs text-emerald-400 flex items-center gap-1">
@@ -120,6 +160,12 @@ export function McpServerSettings({ server, onApiKeyRegenerate, onBaseUrlChange 
               </span>
             )}
           </div>
+          {discoverMsg && (
+            <p className={`text-2xs mt-1 ${discoverMsg.ok ? 'text-emerald-400' : 'text-red-400'}`}>
+              {discoverMsg.text}
+            </p>
+          )}
+          <p className="text-2xs text-txt-muted">{t('mcp.discoverHint')}</p>
         </div>
       </div>
 

@@ -18,6 +18,14 @@ create table if not exists public.aas_mcp_servers (
 alter table public.aas_mcp_servers
   add column if not exists tool_descriptions jsonb not null default '{}'::jsonb;
 
+-- Dynamic tool discovery (Runde 7):
+--   available_tools = tool names derived from the AAS server's /description profiles
+--   enabled_tools   = user-selected subset (null = all available enabled)
+alter table public.aas_mcp_servers
+  add column if not exists available_tools jsonb not null default '[]'::jsonb;
+alter table public.aas_mcp_servers
+  add column if not exists enabled_tools jsonb;
+
 create index if not exists idx_aas_mcp_servers_user_id
   on public.aas_mcp_servers (user_id);
 
