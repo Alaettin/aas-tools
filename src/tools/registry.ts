@@ -60,6 +60,17 @@ export const tools: ToolDefinition[] = [
     component: lazy(() => import('./global-connector')),
   },
   {
+    id: 'aas-mcp',
+    name: 'MCP Server',
+    description: 'Stelle eine AAS-Repository-API als MCP-Server für andere Clients bereit.',
+    icon: 'Plug',
+    iconColor: 'text-purple-400',
+    category: 'application',
+    status: 'active',
+    requiredRole: 'user',
+    component: lazy(() => import('./aas-mcp')),
+  },
+  {
     id: 'use-case-checker',
     name: 'Use Case Checker',
     description: 'AAS gegen definierte Use Cases evaluieren.',

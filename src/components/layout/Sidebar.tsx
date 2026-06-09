@@ -20,6 +20,7 @@ import {
   ClipboardCheck,
   Globe,
   QrCode,
+  Plug,
 } from 'lucide-react';
 
 const ICON_MAP: Record<string, (cls: string) => React.ReactNode> = {
@@ -29,6 +30,7 @@ const ICON_MAP: Record<string, (cls: string) => React.ReactNode> = {
   ClipboardCheck: (cls) => <ClipboardCheck className={cls} />,
   Globe: (cls) => <Globe className={cls} />,
   QrCode: (cls) => <QrCode className={cls} />,
+  Plug: (cls) => <Plug className={cls} />,
 };
 
 const DOC_ICON_MAP: Record<string, (cls: string) => React.ReactNode> = {
