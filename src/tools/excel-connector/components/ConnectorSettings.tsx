@@ -45,6 +45,7 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate, onSettingsCha
       .eq('connector_id', connector.connector_id);
     if (error) {
       // Revert on failure
+      console.error('Failed to save debug settings:', error);
       setAttrs(attrs);
       onSettingsChange(attrs);
     }

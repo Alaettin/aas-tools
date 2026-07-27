@@ -253,7 +253,7 @@ export const en = {
   'apiKey.regenerate': 'Regenerate key',
 
   // --- Attribute toggles (Excel connector Test/Debug) ---
-  'attrs.title': 'Test / Debug',
+  'attrs.title': 'Debug',
   'attrs.hint': 'Choose whether the mimeType and filename attributes are included in the API responses. Test the result on the API tab.',
   'attrs.valuesCall': 'Values call',
   'attrs.documentsCall': 'Documents call',
