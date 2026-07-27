@@ -1,14 +1,15 @@
 import { useState, useRef } from 'react';
-import { Copy, RefreshCw, Check, Key, Download, Upload, Loader2, AlertTriangle } from 'lucide-react';
+import { Copy, RefreshCw, Check, Key, Download, Upload, Loader2, AlertTriangle, SlidersHorizontal } from 'lucide-react';
 import JSZip from 'jszip';
 import { read, write, utils } from 'xlsx';
 import { supabase } from '@/lib/supabase';
-import type { ExcelConnector } from '../types';
+import type { ExcelConnector, ExcelConnectorSettings } from '../types';
 import { useLocale } from '@/context/LocaleContext';
 
 interface ConnectorSettingsProps {
   connector: ExcelConnector;
   onApiKeyRegenerate: (newKey: string) => void;
+  onSettingsChange: (settings: ExcelConnectorSettings) => void;
 }
 
 // Download fresh from Storage (bypass cache)
@@ -20,11 +21,34 @@ async function downloadFresh(bucket: string, path: string): Promise<ArrayBuffer 
   return res.arrayBuffer();
 }
 
-export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSettingsProps) {
+export function ConnectorSettings({ connector, onApiKeyRegenerate, onSettingsChange }: ConnectorSettingsProps) {
   const { t } = useLocale();
   const [copied, setCopied] = useState(false);
   const [regenerating, setRegenerating] = useState(false);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
+
+  // Attribute toggles (default: all on; only explicit false disables)
+  const [attrs, setAttrs] = useState({
+    valuesMimeType: connector.settings?.valuesMimeType !== false,
+    valuesFilename: connector.settings?.valuesFilename !== false,
+    documentsMimeType: connector.settings?.documentsMimeType !== false,
+    documentsFilename: connector.settings?.documentsFilename !== false,
+  });
+
+  const toggleAttr = async (key: keyof typeof attrs) => {
+    const next = { ...attrs, [key]: !attrs[key] };
+    setAttrs(next);
+    onSettingsChange(next);
+    const { error } = await supabase
+      .from('excel_connectors')
+      .update({ settings: next })
+      .eq('connector_id', connector.connector_id);
+    if (error) {
+      // Revert on failure
+      setAttrs(attrs);
+      onSettingsChange(attrs);
+    }
+  };
 
   // Export state
   const [exporting, setExporting] = useState(false);
@@ -193,8 +217,51 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate }: ConnectorSe
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
+  const AttrCheckbox = ({ attrKey, label }: { attrKey: keyof typeof attrs; label: string }) => (
+    <label className="flex items-center gap-2.5 cursor-pointer select-none">
+      <input
+        type="checkbox"
+        checked={attrs[attrKey]}
+        onChange={() => toggleAttr(attrKey)}
+        className="w-4 h-4 rounded-sm border-border bg-bg-input text-accent accent-accent cursor-pointer"
+      />
+      <span className="text-sm text-txt-secondary">{label}</span>
+    </label>
+  );
+
   return (
     <div className="space-y-6">
+      {/* Test / Debug — attribute toggles */}
+      <div className="bg-bg-surface border border-border rounded">
+        <div className="px-5 py-4 border-b border-border">
+          <div className="flex items-center gap-2">
+            <SlidersHorizontal className="w-4 h-4 text-accent" />
+            <h2 className="font-mono text-sm font-semibold uppercase tracking-wider text-txt-secondary">
+              {t('attrs.title')}
+            </h2>
+          </div>
+        </div>
+        <div className="p-5 space-y-5">
+          <p className="text-xs text-txt-muted">{t('attrs.hint')}</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="space-y-3">
+              <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider font-mono">
+                {t('attrs.valuesCall')}
+              </p>
+              <AttrCheckbox attrKey="valuesMimeType" label={t('attrs.mimeType')} />
+              <AttrCheckbox attrKey="valuesFilename" label={t('attrs.filename')} />
+            </div>
+            <div className="space-y-3">
+              <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider font-mono">
+                {t('attrs.documentsCall')}
+              </p>
+              <AttrCheckbox attrKey="documentsMimeType" label={t('attrs.mimeType')} />
+              <AttrCheckbox attrKey="documentsFilename" label={t('attrs.filename')} />
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* API Key */}
       <div className="bg-bg-surface border border-border rounded">
         <div className="px-5 py-4 border-b border-border">

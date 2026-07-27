@@ -10,9 +10,14 @@ create table if not exists public.excel_connectors (
   name text not null check (char_length(name) between 1 and 200),
   api_key uuid default gen_random_uuid() unique not null,
   excel_path text,
+  settings jsonb not null default '{}'::jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
+
+-- Migration für bestehende Tabellen (idempotent):
+alter table public.excel_connectors
+  add column if not exists settings jsonb not null default '{}'::jsonb;
 
 alter table public.excel_connectors enable row level security;
 

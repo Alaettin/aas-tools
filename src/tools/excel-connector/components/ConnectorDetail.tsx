@@ -3,7 +3,7 @@ import { ArrowLeft, Loader2, FileSpreadsheet, FolderOpen, Code, Settings } from 
 import { supabase } from '@/lib/supabase';
 import { withTimeout } from '@/lib/fetch-with-timeout';
 import { useLocale } from '@/context/LocaleContext';
-import type { ExcelConnector, ExcelConnectorTab } from '../types';
+import type { ExcelConnector, ExcelConnectorSettings, ExcelConnectorTab } from '../types';
 import { FileManager } from './FileManager';
 import { ApiSettings } from './ApiSettings';
 import { SpreadsheetEditor } from './SpreadsheetEditor';
@@ -68,6 +68,10 @@ export function ConnectorDetail({ connectorId, onBack }: ConnectorDetailProps) {
     setConnector(prev => prev ? { ...prev, api_key: newKey } : prev);
   };
 
+  const handleSettingsChange = (settings: ExcelConnectorSettings) => {
+    setConnector(prev => prev ? { ...prev, settings } : prev);
+  };
+
   return (
     <div className="max-w-5xl animate-fade-in">
       {/* Header */}
@@ -106,7 +110,7 @@ export function ConnectorDetail({ connectorId, onBack }: ConnectorDetailProps) {
           <ApiSettings connector={connector} />
         )}
         {activeTab === 'settings' && (
-          <ConnectorSettings connector={connector} onApiKeyRegenerate={handleApiKeyRegenerate} />
+          <ConnectorSettings connector={connector} onApiKeyRegenerate={handleApiKeyRegenerate} onSettingsChange={handleSettingsChange} />
         )}
       </div>
     </div>

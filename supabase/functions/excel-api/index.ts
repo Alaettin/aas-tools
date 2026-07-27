@@ -126,12 +126,21 @@ Deno.serve(async (req) => {
   // Resolve API key
   const { data: conn } = await supabase
     .from('excel_connectors')
-    .select('connector_id, user_id, excel_path')
+    .select('connector_id, user_id, excel_path, settings')
     .eq('api_key', apiKey)
     .single()
 
   if (!conn) return err('Invalid API key', 401)
   if (!conn.excel_path) return err('No Excel file configured', 404)
+
+  // Attribute toggles — missing/true = include, only explicit false disables
+  const s = (conn as any).settings || {}
+  const opt = {
+    valuesMimeType: s.valuesMimeType !== false,
+    valuesFilename: s.valuesFilename !== false,
+    documentsMimeType: s.documentsMimeType !== false,
+    documentsFilename: s.documentsFilename !== false,
+  }
 
   const path = '/' + parts.slice(1).join('/')
   const pathLower = path.toLowerCase()
@@ -243,8 +252,8 @@ Deno.serve(async (req) => {
                 result.push({
                   propertyId: dp.cleanKey,
                   value: bytesToBase64(new Uint8Array(fileBuffer)),
-                  mimeType,
-                  filename: filenameNoExt,
+                  ...(opt.valuesMimeType ? { mimeType } : {}),
+                  ...(opt.valuesFilename ? { filename: filenameNoExt } : {}),
                   valueLanguage: dp.lang,
                   needsResolve: false,
                 })
@@ -257,8 +266,8 @@ Deno.serve(async (req) => {
           result.push({
             propertyId: dp.cleanKey,
             value: filenameNoExt,
-            mimeType: mimeFromExt,
-            filename: filenameNoExt,
+            ...(opt.valuesMimeType ? { mimeType: mimeFromExt } : {}),
+            ...(opt.valuesFilename ? { filename: filenameNoExt } : {}),
             valueLanguage: dp.lang,
             needsResolve: true,
           })
@@ -324,7 +333,8 @@ Deno.serve(async (req) => {
               result.push({
                 propertyId: fileId,
                 value: bytesToBase64(new Uint8Array(fileBuffer)),
-                filename: fileId,
+                ...(opt.documentsMimeType ? { mimeType: guessMimeType(entry.filename) } : {}),
+                ...(opt.documentsFilename ? { filename: fileId } : {}),
                 valueLanguage: entry.lang,
                 needsResolve: false,
               })

@@ -252,6 +252,14 @@ export const en = {
   'apiKey.regenerating': 'Generating…',
   'apiKey.regenerate': 'Regenerate key',
 
+  // --- Attribute toggles (Excel connector Test/Debug) ---
+  'attrs.title': 'Test / Debug',
+  'attrs.hint': 'Choose whether the mimeType and filename attributes are included in the API responses. Test the result on the API tab.',
+  'attrs.valuesCall': 'Values call',
+  'attrs.documentsCall': 'Documents call',
+  'attrs.mimeType': 'Send mimeType',
+  'attrs.filename': 'Send filename',
+
   // --- Connector List (shared) ---
   'connector.newPlaceholder': 'New connector name…',
   'connector.noConnectors': 'No connectors yet.',
