@@ -36,19 +36,40 @@ function bytesToBase64(bytes: Uint8Array): string {
   return btoa(binary)
 }
 
-// Derive MIME type from file extension
-function guessMimeType(filename: string): string {
+const MIME_BY_EXT: Record<string, string> = {
+  pdf: 'application/pdf', json: 'application/json', xml: 'application/xml',
+  png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
+  svg: 'image/svg+xml', webp: 'image/webp',
+  doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  csv: 'text/csv', txt: 'text/plain', html: 'text/html',
+  zip: 'application/zip', gz: 'application/gzip',
+  // CAD / 3D exchange formats
+  step: 'model/step', stp: 'model/step', p21: 'model/step',
+  stpz: 'model/step+zip',
+  edz: 'application/x-edz',
+  iges: 'model/iges', igs: 'model/iges',
+  stl: 'model/stl',
+  dwg: 'image/vnd.dwg', dxf: 'image/vnd.dxf',
+  '3mf': 'model/3mf', obj: 'model/obj',
+  glb: 'model/gltf-binary', gltf: 'model/gltf+json',
+  aasx: 'application/asset-administration-shell-package+xml',
+}
+
+// Derive MIME type from file extension, undefined when the extension is unknown
+function lookupMimeType(filename: string): string | undefined {
   const ext = filename.split('.').pop()?.toLowerCase() || ''
-  const map: Record<string, string> = {
-    pdf: 'application/pdf', json: 'application/json', xml: 'application/xml',
-    png: 'image/png', jpg: 'image/jpeg', jpeg: 'image/jpeg', gif: 'image/gif',
-    svg: 'image/svg+xml', webp: 'image/webp',
-    doc: 'application/msword', docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-    xls: 'application/vnd.ms-excel', xlsx: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-    csv: 'text/csv', txt: 'text/plain', html: 'text/html',
-    zip: 'application/zip', gz: 'application/gzip',
-  }
-  return map[ext] || 'application/octet-stream'
+  return MIME_BY_EXT[ext]
+}
+
+function guessMimeType(filename: string): string {
+  return lookupMimeType(filename) || 'application/octet-stream'
+}
+
+// CAD drawing formats are registered under image/ (image/vnd.dwg, image/vnd.dxf)
+// but are not renderable pictures, so they must not be inlined as base64
+function isInlineImage(mimeType: string): boolean {
+  return mimeType.startsWith('image/') && !mimeType.startsWith('image/vnd.')
 }
 
 // Parse Excel rows into structured data
@@ -236,7 +257,9 @@ Deno.serve(async (req) => {
         if (dp.type === 'Document') {
           // Try to resolve file from documents folder
           const storagePath = `${docFolder}/${value}`
-          const mimeFromExt = guessMimeType(value)
+          // Extension wins over the storage header: uploads carry no contentType,
+          // so storage always reports application/octet-stream
+          const mimeFromExt = lookupMimeType(value)
           const { data: signed } = await supabase.storage
             .from('excel-connectors')
             .createSignedUrl(storagePath, 60)
@@ -245,8 +268,8 @@ Deno.serve(async (req) => {
             const fileRes = await fetch(signed.signedUrl)
             if (fileRes.ok) {
               const fileBuffer = await fileRes.arrayBuffer()
-              const mimeType = fileRes.headers.get('content-type') || mimeFromExt
-              const isImage = mimeType.startsWith('image/')
+              const mimeType = mimeFromExt || fileRes.headers.get('content-type') || 'application/octet-stream'
+              const isImage = isInlineImage(mimeType)
 
               if (isImage) {
                 result.push({
@@ -266,7 +289,7 @@ Deno.serve(async (req) => {
           result.push({
             propertyId: dp.cleanKey,
             value: filenameNoExt,
-            ...(opt.valuesMimeType ? { mimeType: mimeFromExt } : {}),
+            ...(opt.valuesMimeType ? { mimeType: mimeFromExt || 'application/octet-stream' } : {}),
             ...(opt.valuesFilename ? { filename: filenameNoExt } : {}),
             valueLanguage: dp.lang,
             needsResolve: true,
