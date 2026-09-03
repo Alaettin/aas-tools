@@ -114,7 +114,7 @@ const endpoints: Endpoint[] = [
     "propertyId": "EN:ProductImage",
     "value": "JVBERi0xLjQ...",
     "mimeType": "image/png",
-    "filename": "product_a",
+    "filename": "product_a.png",
     "valueLanguage": "en",
     "needsResolve": false
   }
