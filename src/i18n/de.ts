@@ -254,11 +254,14 @@ export const de = {
 
   // --- Attribute toggles (Excel connector Test/Debug) ---
   'attrs.title': 'Debug',
-  'attrs.hint': 'Lege fest, ob die Attribute mimeType und filename in den API-Antworten mitgesendet werden. Prüfe das Ergebnis im API-Tab.',
+  'attrs.hint': 'Lege fest, ob mimeType mitgesendet wird und in welcher Form filename in den API-Antworten steht. Prüfe das Ergebnis im API-Tab.',
   'attrs.valuesCall': 'Values-Call',
   'attrs.documentsCall': 'Documents-Call',
   'attrs.mimeType': 'mimeType senden',
-  'attrs.filename': 'filename senden',
+  'attrs.filename': 'filename',
+  'attrs.filenameFull': 'mit Endung',
+  'attrs.filenameNoExt': 'ohne Endung',
+  'attrs.filenameOff': 'nicht senden',
 
   // --- Connector List (shared) ---
   'connector.newPlaceholder': 'Neuer Connector Name…',

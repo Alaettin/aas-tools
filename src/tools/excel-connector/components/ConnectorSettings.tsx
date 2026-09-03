@@ -4,7 +4,8 @@ import JSZip from 'jszip';
 import { read, write, utils } from 'xlsx';
 import { supabase } from '@/lib/supabase';
 import type { ExcelConnector, ExcelConnectorSettings } from '../types';
-import { useLocale } from '@/context/LocaleContext';
+import { filenameMode, type FilenameMode } from '../lib/filenameMode';
+import { useLocale, type TranslationKey } from '@/context/LocaleContext';
 
 interface ConnectorSettingsProps {
   connector: ExcelConnector;
@@ -27,16 +28,21 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate, onSettingsCha
   const [regenerating, setRegenerating] = useState(false);
   const [confirmRegenerate, setConfirmRegenerate] = useState(false);
 
-  // Attribute toggles (default: all on; only explicit false disables)
+  // Attribute settings. mimeType is a toggle (default on, only explicit false disables),
+  // filename is three-state and normalized from the legacy boolean shape.
   const [attrs, setAttrs] = useState({
     valuesMimeType: connector.settings?.valuesMimeType !== false,
-    valuesFilename: connector.settings?.valuesFilename !== false,
+    valuesFilename: filenameMode(connector.settings?.valuesFilename),
     documentsMimeType: connector.settings?.documentsMimeType !== false,
-    documentsFilename: connector.settings?.documentsFilename !== false,
+    documentsFilename: filenameMode(connector.settings?.documentsFilename),
   });
 
-  const toggleAttr = async (key: keyof typeof attrs) => {
-    const next = { ...attrs, [key]: !attrs[key] };
+  type Attrs = typeof attrs;
+  type ToggleKey = 'valuesMimeType' | 'documentsMimeType';
+  type FilenameKey = 'valuesFilename' | 'documentsFilename';
+
+  const persist = async (next: Attrs) => {
+    const prev = attrs;
     setAttrs(next);
     onSettingsChange(next);
     const { error } = await supabase
@@ -46,9 +52,16 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate, onSettingsCha
     if (error) {
       // Revert on failure
       console.error('Failed to save debug settings:', error);
-      setAttrs(attrs);
-      onSettingsChange(attrs);
+      setAttrs(prev);
+      onSettingsChange(prev);
     }
+  };
+
+  const toggleAttr = (key: ToggleKey) => persist({ ...attrs, [key]: !attrs[key] });
+
+  const setFilenameMode = (key: FilenameKey, mode: FilenameMode) => {
+    if (attrs[key] === mode) return;
+    return persist({ ...attrs, [key]: mode });
   };
 
   // Export state
@@ -218,7 +231,7 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate, onSettingsCha
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
-  const AttrCheckbox = ({ attrKey, label }: { attrKey: keyof typeof attrs; label: string }) => (
+  const AttrCheckbox = ({ attrKey, label }: { attrKey: ToggleKey; label: string }) => (
     <label className="flex items-center gap-2.5 cursor-pointer select-none">
       <input
         type="checkbox"
@@ -228,6 +241,38 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate, onSettingsCha
       />
       <span className="text-sm text-txt-secondary">{label}</span>
     </label>
+  );
+
+  const FILENAME_MODES: { mode: FilenameMode; labelKey: TranslationKey }[] = [
+    { mode: 'full', labelKey: 'attrs.filenameFull' },
+    { mode: 'noext', labelKey: 'attrs.filenameNoExt' },
+    { mode: 'none', labelKey: 'attrs.filenameOff' },
+  ];
+
+  const FilenameModeControl = ({ attrKey }: { attrKey: FilenameKey }) => (
+    <div className="space-y-1.5">
+      <span className="text-sm text-txt-secondary">{t('attrs.filename')}</span>
+      <div className="flex flex-wrap gap-1.5">
+        {FILENAME_MODES.map(({ mode, labelKey }) => {
+          const active = attrs[attrKey] === mode;
+          return (
+            <button
+              key={mode}
+              type="button"
+              onClick={() => setFilenameMode(attrKey, mode)}
+              aria-pressed={active}
+              className={`px-2.5 py-1 text-2xs font-mono rounded-sm border transition-colors ${
+                active
+                  ? 'border-accent text-accent bg-bg-elevated'
+                  : 'border-border text-txt-muted bg-bg-input hover:bg-bg-elevated hover:text-txt-secondary'
+              }`}
+            >
+              {t(labelKey)}
+            </button>
+          );
+        })}
+      </div>
+    </div>
   );
 
   return (
@@ -250,14 +295,14 @@ export function ConnectorSettings({ connector, onApiKeyRegenerate, onSettingsCha
                 {t('attrs.valuesCall')}
               </p>
               <AttrCheckbox attrKey="valuesMimeType" label={t('attrs.mimeType')} />
-              <AttrCheckbox attrKey="valuesFilename" label={t('attrs.filename')} />
+              <FilenameModeControl attrKey="valuesFilename" />
             </div>
             <div className="space-y-3">
               <p className="text-2xs font-medium text-txt-muted uppercase tracking-wider font-mono">
                 {t('attrs.documentsCall')}
               </p>
               <AttrCheckbox attrKey="documentsMimeType" label={t('attrs.mimeType')} />
-              <AttrCheckbox attrKey="documentsFilename" label={t('attrs.filename')} />
+              <FilenameModeControl attrKey="documentsFilename" />
             </div>
           </div>
         </div>

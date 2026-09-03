@@ -1,8 +1,11 @@
+import type { FilenameMode } from './lib/filenameMode';
+
 export interface ExcelConnectorSettings {
   valuesMimeType?: boolean;
-  valuesFilename?: boolean;
+  // FilenameMode since 09/2026; boolean is the legacy shape still present in stored rows
+  valuesFilename?: FilenameMode | boolean;
   documentsMimeType?: boolean;
-  documentsFilename?: boolean;
+  documentsFilename?: FilenameMode | boolean;
 }
 
 export interface ExcelConnector {

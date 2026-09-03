@@ -47,7 +47,7 @@ const MIME_BY_EXT: Record<string, string> = {
   // CAD / 3D exchange formats
   step: 'model/step', stp: 'model/step', p21: 'model/step',
   stpz: 'model/step+zip',
-  edz: 'application/x-edz',
+  edz: 'application/x-eplan-edz',
   iges: 'model/iges', igs: 'model/iges',
   stl: 'model/stl',
   dwg: 'image/vnd.dwg', dxf: 'image/vnd.dxf',
@@ -70,6 +70,21 @@ function guessMimeType(filename: string): string {
 // but are not renderable pictures, so they must not be inlined as base64
 function isInlineImage(mimeType: string): boolean {
   return mimeType.startsWith('image/') && !mimeType.startsWith('image/vnd.')
+}
+
+// Mirror of src/tools/excel-connector/lib/filenameMode.ts — Deno cannot import from src/
+type FilenameMode = 'full' | 'noext' | 'none'
+
+// Legacy rows hold a boolean: missing/true = send, false = omit
+function filenameMode(v: unknown): FilenameMode {
+  if (v === 'full' || v === 'noext' || v === 'none') return v
+  return v === false ? 'none' : 'full'
+}
+
+// Spread into a response object: omits the attribute entirely in mode 'none'
+function filenameAttr(name: string, mode: FilenameMode) {
+  if (mode === 'none') return {}
+  return { filename: mode === 'noext' ? name.replace(/\.[^.]+$/, '') : name }
 }
 
 // Parse Excel rows into structured data
@@ -154,13 +169,14 @@ Deno.serve(async (req) => {
   if (!conn) return err('Invalid API key', 401)
   if (!conn.excel_path) return err('No Excel file configured', 404)
 
-  // Attribute toggles — missing/true = include, only explicit false disables
+  // Attribute toggles — missing/true = include, only explicit false disables.
+  // The filename attributes are three-state: full name, name without extension, or omitted.
   const s = (conn as any).settings || {}
   const opt = {
     valuesMimeType: s.valuesMimeType !== false,
-    valuesFilename: s.valuesFilename !== false,
+    valuesFilename: filenameMode(s.valuesFilename),
     documentsMimeType: s.documentsMimeType !== false,
-    documentsFilename: s.documentsFilename !== false,
+    documentsFilename: filenameMode(s.documentsFilename),
   }
 
   const path = '/' + parts.slice(1).join('/')
@@ -252,8 +268,6 @@ Deno.serve(async (req) => {
           }
         }
 
-        const filenameNoExt = value.replace(/\.[^.]+$/, '')
-
         if (dp.type === 'Document') {
           // Try to resolve file from documents folder
           const storagePath = `${docFolder}/${value}`
@@ -276,7 +290,7 @@ Deno.serve(async (req) => {
                   propertyId: dp.cleanKey,
                   value: bytesToBase64(new Uint8Array(fileBuffer)),
                   ...(opt.valuesMimeType ? { mimeType } : {}),
-                  ...(opt.valuesFilename ? { filename: filenameNoExt } : {}),
+                  ...filenameAttr(value, opt.valuesFilename),
                   valueLanguage: dp.lang,
                   needsResolve: false,
                 })
@@ -285,12 +299,13 @@ Deno.serve(async (req) => {
             }
           }
 
-          // Non-image or file not found: return reference
+          // Non-image or file not found: return reference.
+          // value stays without extension, the documents call looks up by that key
           result.push({
             propertyId: dp.cleanKey,
-            value: filenameNoExt,
+            value: value.replace(/\.[^.]+$/, ''),
             ...(opt.valuesMimeType ? { mimeType: mimeFromExt || 'application/octet-stream' } : {}),
-            ...(opt.valuesFilename ? { filename: filenameNoExt } : {}),
+            ...filenameAttr(value, opt.valuesFilename),
             valueLanguage: dp.lang,
             needsResolve: true,
           })
@@ -357,7 +372,7 @@ Deno.serve(async (req) => {
                 propertyId: fileId,
                 value: bytesToBase64(new Uint8Array(fileBuffer)),
                 ...(opt.documentsMimeType ? { mimeType: guessMimeType(entry.filename) } : {}),
-                ...(opt.documentsFilename ? { filename: fileId } : {}),
+                ...filenameAttr(entry.filename, opt.documentsFilename),
                 valueLanguage: entry.lang,
                 needsResolve: false,
               })
